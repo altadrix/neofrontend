@@ -185,8 +185,8 @@ const loadUsers = async () => {
 };
 
 const roleLabel = (idRol) => {
-  if (Number(idRol) === 2) return 'Administrador';
-  if (Number(idRol) === 3) return 'Gerente';
+  if (Number(idRol) === 3) return 'Administrador';
+  if (Number(idRol) === 2) return 'Gerente de operaciones';
   return 'Usuario';
 };
 

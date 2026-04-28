@@ -41,9 +41,9 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">Inventario</p>
-            <h2>Stock por formato</h2>
+            <h2>Stock por producto</h2>
           </div>
-          <span>{{ lowStockCount }} registros con stock menor a 5</span>
+          <span>{{ lowStockCount }} productos con stock menor a 5</span>
         </div>
 
         <div class="table-wrapper">
@@ -51,40 +51,39 @@
             <thead>
               <tr>
                 <th>Producto</th>
-                <th>Plataforma</th>
-                <th>Formato</th>
+                <th>Tipo</th>
                 <th>Precio</th>
                 <th>Stock</th>
                 <th>Accion</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in inventory" :key="row.id_vj_formato" :class="{ danger: row.lowStock }">
+              <tr v-for="row in inventory" :key="row.id_producto" :class="{ danger: row.lowStock }">
                 <td>
                   <div class="product-cell">
-                    <img :src="buildImageUrl(row.imagen_url, `https://picsum.photos/seed/${row.id_producto}/80/80`)" :alt="row.titulo" />
+                    <img
+                      :src="buildImageUrl(row.imagen_url, `https://picsum.photos/seed/${row.id_producto}/80/80`)"
+                      :alt="row.titulo"
+                    />
                     <div>
                       <strong>{{ row.titulo }}</strong>
-                      <small>{{ row.genero || 'Genero pendiente' }}</small>
+                      <small>{{ row.formato || row.plataforma || row.genero || 'General' }}</small>
                     </div>
                   </div>
                 </td>
-                <td>{{ row.plataforma || 'General' }}</td>
-                <td>{{ row.formato }}</td>
+                <td>{{ row.tipo_producto_nombre || 'Sin tipo' }}</td>
                 <td>{{ formatCurrency(row.precio) }}</td>
                 <td>
                   <input
-                    :value="stockDrafts[row.id_vj_formato] ?? row.stock"
+                    :value="stockDrafts[row.id_producto] ?? row.stock"
                     class="stock-input"
                     min="0"
                     type="number"
-                    @input="updateDraft(row.id_vj_formato, $event.target.value)"
+                    @input="updateDraft(row.id_producto, $event.target.value)"
                   />
                 </td>
                 <td>
-                  <button class="table-button" type="button" @click="saveStock(row)">
-                    Guardar
-                  </button>
+                  <button class="table-button" type="button" @click="saveStock(row)">Guardar</button>
                 </td>
               </tr>
             </tbody>
@@ -96,7 +95,7 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">Pedidos</p>
-            <h2>Confirmado a enviado</h2>
+            <h2>Estados de envio y entrega</h2>
           </div>
         </div>
 
@@ -122,8 +121,12 @@
                     class="status-select"
                     @change="updateStatusDraft(pedido.id_pedido, $event.target.value)"
                   >
-                    <option v-for="status in statusOptions" :key="status.id" :value="status.id">
-                      {{ status.label }}
+                    <option
+                      v-for="status in statusOptions"
+                      :key="status.id_estado_pedido"
+                      :value="status.id_estado_pedido"
+                    >
+                      {{ status.nombre }}
                     </option>
                   </select>
                 </td>
@@ -133,6 +136,50 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Municipios pendientes</p>
+            <h2>Validacion administrativa</h2>
+          </div>
+          <span>{{ pendingMunicipios.length }} pendientes</span>
+        </div>
+
+        <div v-if="!pendingMunicipios.length" class="empty-copy">
+          No hay municipios personalizados pendientes de validar.
+        </div>
+
+        <div v-else class="review-grid">
+          <article
+            v-for="municipio in pendingMunicipios"
+            :key="municipio.id_direccion"
+            class="review-card"
+          >
+            <div class="review-top">
+              <div>
+                <strong>{{ municipio.municipio_personalizado }}</strong>
+                <p>{{ municipio.provincia_nombre }}</p>
+              </div>
+            </div>
+
+            <input
+              :value="municipioDrafts[municipio.id_direccion] ?? municipio.municipio_personalizado"
+              class="status-select"
+              type="text"
+              @input="updateMunicipioDraft(municipio.id_direccion, $event.target.value)"
+            />
+
+            <small>{{ municipio.calle }}, {{ municipio.numero_casa }}</small>
+
+            <div class="review-actions">
+              <button class="approve-button" type="button" @click="validateMunicipio(municipio)">
+                Registrar como oficial
+              </button>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -180,6 +227,10 @@ import { apiFetch, buildImageUrl, formatCurrency } from '../utils/api';
 import { authHeaders } from '../utils/session';
 import AdminDashboard from '../components/AdminDashboard.vue';
 
+defineOptions({
+  name: 'AdminDashboardPage',
+});
+
 const summary = ref({
   usuarios: 0,
   productos: 0,
@@ -187,22 +238,19 @@ const summary = ref({
   totalVentas: 0,
   resenasPendientes: 0,
   itemsBajoStock: 0,
+  municipiosPendientes: 0,
 });
 const inventory = ref([]);
 const orders = ref([]);
 const reviews = ref([]);
+const pendingMunicipios = ref([]);
+const statusOptions = ref([]);
 const loading = ref(true);
 const error = ref('');
 const feedback = ref('');
 const stockDrafts = ref({});
 const statusDrafts = ref({});
-
-const statusOptions = [
-  { id: 2, label: 'Confirmado' },
-  { id: 4, label: 'Enviado' },
-  { id: 5, label: 'Entregado' },
-  { id: 6, label: 'Cancelado' },
-];
+const municipioDrafts = ref({});
 
 const lowStockCount = computed(() => inventory.value.filter((row) => row.lowStock).length);
 
@@ -214,19 +262,29 @@ const loadAdminData = async () => {
   try {
     const headers = authHeaders();
 
-    const [summaryPayload, inventoryPayload, ordersPayload, reviewsPayload] = await Promise.all([
-      apiFetch('/admin/dashboard', { headers }),
-      apiFetch('/admin/inventario', { headers }),
-      apiFetch('/pedidos', { headers }),
-      apiFetch('/admin/resenas', { headers }),
-    ]);
+    const [summaryPayload, inventoryPayload, ordersPayload, reviewsPayload, municipiosPayload, catalogPayload] =
+      await Promise.all([
+        apiFetch('/admin/dashboard', { headers }),
+        apiFetch('/admin/inventario', { headers }),
+        apiFetch('/pedidos', { headers }),
+        apiFetch('/admin/resenas', { headers }),
+        apiFetch('/admin/municipios-pendientes', { headers }),
+        apiFetch('/admin/catalogos', { headers }),
+      ]);
 
     summary.value = summaryPayload;
     inventory.value = inventoryPayload;
     orders.value = ordersPayload;
     reviews.value = reviewsPayload;
-    stockDrafts.value = Object.fromEntries(inventoryPayload.map((row) => [row.id_vj_formato, row.stock]));
-    statusDrafts.value = Object.fromEntries(ordersPayload.map((order) => [order.id_pedido, order.id_estado_pedido]));
+    pendingMunicipios.value = municipiosPayload;
+    statusOptions.value = catalogPayload.estadosPedido || [];
+    stockDrafts.value = Object.fromEntries(inventoryPayload.map((row) => [row.id_producto, row.stock]));
+    statusDrafts.value = Object.fromEntries(
+      ordersPayload.map((order) => [order.id_pedido, order.id_estado_pedido]),
+    );
+    municipioDrafts.value = Object.fromEntries(
+      municipiosPayload.map((municipio) => [municipio.id_direccion, municipio.municipio_personalizado]),
+    );
   } catch (err) {
     error.value = err.message || 'No se pudo cargar el panel admin.';
   } finally {
@@ -234,10 +292,10 @@ const loadAdminData = async () => {
   }
 };
 
-const updateDraft = (idVjFormato, value) => {
+const updateDraft = (idProducto, value) => {
   stockDrafts.value = {
     ...stockDrafts.value,
-    [idVjFormato]: Number(value),
+    [idProducto]: Number(value),
   };
 };
 
@@ -245,10 +303,10 @@ const saveStock = async (row) => {
   feedback.value = '';
 
   try {
-    await apiFetch(`/admin/inventario/${row.id_vj_formato}`, {
+    await apiFetch(`/admin/inventario/${row.id_producto}`, {
       method: 'PUT',
       headers: authHeaders(),
-      body: JSON.stringify({ stock: Number(stockDrafts.value[row.id_vj_formato]) }),
+      body: JSON.stringify({ stock: Number(stockDrafts.value[row.id_producto]) }),
     });
 
     await loadAdminData();
@@ -279,6 +337,33 @@ const saveOrderStatus = async (pedido) => {
     feedback.value = `Pedido #${pedido.id_pedido} actualizado.`;
   } catch (err) {
     feedback.value = err.message || 'No se pudo actualizar el pedido.';
+  }
+};
+
+const updateMunicipioDraft = (idDireccion, value) => {
+  municipioDrafts.value = {
+    ...municipioDrafts.value,
+    [idDireccion]: value,
+  };
+};
+
+const validateMunicipio = async (municipio) => {
+  feedback.value = '';
+
+  try {
+    await apiFetch('/admin/municipios-pendientes/validar', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        id_provincia: municipio.id_provincia,
+        nombre: municipioDrafts.value[municipio.id_direccion] || municipio.municipio_personalizado,
+      }),
+    });
+
+    await loadAdminData();
+    feedback.value = 'Municipio registrado como oficial y direcciones actualizadas.';
+  } catch (err) {
+    feedback.value = err.message || 'No se pudo validar el municipio.';
   }
 };
 
@@ -485,7 +570,10 @@ tr.danger {
 }
 
 .product-cell small,
-.feedback {
+.feedback,
+.review-copy,
+.review-top p,
+.empty-copy {
   color: var(--muted-light);
 }
 
@@ -497,7 +585,7 @@ tr.danger {
   border: 1px solid rgba(148, 163, 184, 0.18);
   background: rgba(255, 255, 255, 0.74);
   padding: 0 0.8rem;
-  color: black; /*Inherit*/
+  color: black;
 }
 
 .review-grid {
@@ -508,12 +596,6 @@ tr.danger {
 
 .review-card {
   padding: 1rem;
-}
-
-.review-top p,
-.review-copy {
-  margin: 0.35rem 0 0;
-  color: var(--muted-light);
 }
 
 .review-state {
@@ -558,7 +640,8 @@ tr.danger {
 :global(.dark) .product-cell small,
 :global(.dark) .review-top p,
 :global(.dark) .review-copy,
-:global(.dark) .feedback {
+:global(.dark) .feedback,
+:global(.dark) .empty-copy {
   color: var(--muted-dark);
 }
 

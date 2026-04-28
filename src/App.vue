@@ -98,8 +98,8 @@ const avatarUrl = computed(() =>
 const isAdmin = computed(() => isAdminUser(usuario.value));
 
 const roleLabel = computed(() => {
-  if (Number(usuario.value?.id_rol) === 2) return 'Administrador';
-  if (Number(usuario.value?.id_rol) === 3) return 'Gerente';
+  if (Number(usuario.value?.id_rol) === 3) return 'Administrador';
+  if (Number(usuario.value?.id_rol) === 2) return 'Gerente de operaciones';
   return 'Cliente';
 });
 
@@ -123,7 +123,7 @@ const cargarSesion = async () => {
     });
     usuario.value = perfil;
     updateStoredUser(perfil);
-  } catch (error) {
+  } catch {
     clearSession();
     usuario.value = null;
   }

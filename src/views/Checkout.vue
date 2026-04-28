@@ -3,7 +3,7 @@
     <header class="page-header">
       <div>
         <p class="eyebrow">Checkout</p>
-        <h1>Cerrar venta con ITBIS automatico</h1>
+        <h1>Cerrar pedido con direccion normalizada</h1>
       </div>
       <RouterLink to="/carrito" class="ghost-link">Volver al carrito</RouterLink>
     </header>
@@ -15,7 +15,11 @@
       <div v-if="orderConfirmed" class="success-card">
         <p class="eyebrow">Pedido confirmado</p>
         <h2>Orden #{{ orderConfirmed.id_pedido }}</h2>
-        <p>El carrito fue vaciado, el stock se desconto y el pedido quedo en estado confirmado.</p>
+        <p>
+          El pedido quedo en estado {{ orderConfirmed.Estado?.nombre?.toLowerCase() || 'confirmado' }}
+          y el inventario ya fue descontado del stock general del producto.
+        </p>
+
         <div class="summary-grid">
           <div>
             <small>Total</small>
@@ -25,37 +29,140 @@
             <small>ITBIS</small>
             <strong>{{ formatCurrency(orderConfirmed.itbis) }}</strong>
           </div>
+          <div>
+            <small>Metodo de pago</small>
+            <strong>{{ orderConfirmed.MetodoPago?.nombre || 'No definido' }}</strong>
+          </div>
+          <div>
+            <small>Entrega</small>
+            <strong>{{ shippingSummary }}</strong>
+          </div>
         </div>
+
         <RouterLink to="/" class="primary-link">Volver a la tienda</RouterLink>
       </div>
 
       <div v-else class="checkout-layout">
         <section class="form-panel">
-          <h2>Direccion de envio</h2>
+          <h2>Entrega y pago</h2>
 
           <form class="checkout-form" @submit.prevent="submitCheckout">
-            <label>
-              Calle
-              <input v-model.trim="form.calle_envio" type="text" required />
-            </label>
+            <div class="mode-tabs">
+              <button
+                type="button"
+                class="mode-button"
+                :class="{ active: addressMode === 'saved' }"
+                :disabled="!savedAddresses.length"
+                @click="addressMode = 'saved'"
+              >
+                Direccion guardada
+              </button>
+              <button
+                type="button"
+                class="mode-button"
+                :class="{ active: addressMode === 'new' }"
+                @click="addressMode = 'new'"
+              >
+                Nueva direccion
+              </button>
+            </div>
 
             <label>
-              Numero o referencia de vivienda
-              <input v-model.trim="form.numero_casa_envio" type="text" />
+              Metodo de pago
+              <select v-model.number="form.id_metodo_pago" required>
+                <option value="" disabled>Selecciona un metodo</option>
+                <option
+                  v-for="method in catalogs.metodosPago"
+                  :key="method.id_metodo_pago"
+                  :value="method.id_metodo_pago"
+                >
+                  {{ method.nombre }}
+                </option>
+              </select>
             </label>
 
-            <label>
-              Municipio
-              <input v-model.trim="form.municipio_envio" type="text" required />
-            </label>
+            <template v-if="addressMode === 'saved' && savedAddresses.length">
+              <label>
+                Direccion guardada
+                <select v-model.number="form.id_direccion">
+                  <option v-for="address in savedAddresses" :key="address.id_direccion" :value="address.id_direccion">
+                    {{ address.calle }}, {{ address.numero_casa }} - {{ address.municipio_nombre }}
+                  </option>
+                </select>
+              </label>
 
-            <label>
-              Provincia
-              <input v-model.trim="form.provincia_envio" type="text" />
-            </label>
+              <div v-if="selectedSavedAddress" class="address-preview">
+                <strong>{{ selectedSavedAddress.calle }}, {{ selectedSavedAddress.numero_casa }}</strong>
+                <small>
+                  {{ selectedSavedAddress.municipio_nombre }},
+                  {{ selectedSavedAddress.provincia_nombre }}
+                </small>
+                <small v-if="selectedSavedAddress.detalle">{{ selectedSavedAddress.detalle }}</small>
+              </div>
+            </template>
+
+            <template v-else>
+              <label>
+                Calle
+                <input v-model.trim="form.calle" type="text" required />
+              </label>
+
+              <label>
+                Numero o referencia
+                <input v-model.trim="form.numero_casa" type="text" required />
+              </label>
+
+              <label class="full-width">
+                Detalle adicional
+                <textarea v-model.trim="form.detalle" rows="3"></textarea>
+              </label>
+
+              <label>
+                Provincia
+                <select v-model.number="form.id_provincia" required @change="handleProvinceChange">
+                  <option value="" disabled>Selecciona una provincia</option>
+                  <option
+                    v-for="province in catalogs.provincias"
+                    :key="province.id_provincia"
+                    :value="province.id_provincia"
+                  >
+                    {{ province.nombre }}
+                  </option>
+                </select>
+              </label>
+
+              <label class="checkbox-row">
+                <input v-model="form.use_custom_municipio" type="checkbox" />
+                No encuentro mi municipio en la lista
+              </label>
+
+              <label v-if="!form.use_custom_municipio">
+                Municipio
+                <select v-model.number="form.id_municipio" required>
+                  <option value="" disabled>Selecciona un municipio</option>
+                  <option
+                    v-for="municipio in filteredMunicipios"
+                    :key="municipio.id_municipio"
+                    :value="municipio.id_municipio"
+                  >
+                    {{ municipio.nombre }}
+                  </option>
+                </select>
+              </label>
+
+              <label v-else>
+                Municipio personalizado
+                <input v-model.trim="form.municipio_personalizado" type="text" required />
+              </label>
+
+              <label class="checkbox-row">
+                <input v-model="form.guardar_direccion" type="checkbox" />
+                Guardar esta direccion en mi perfil
+              </label>
+            </template>
 
             <button class="primary-link action-button" type="submit" :disabled="submitting || !cart.items.length">
-              {{ submitting ? 'Procesando pago...' : 'Confirmar pedido' }}
+              {{ submitting ? 'Procesando pedido...' : 'Confirmar pedido' }}
             </button>
           </form>
 
@@ -96,13 +203,14 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, ref } from 'vue';
 import { apiFetch, formatCurrency } from '../utils/api';
 import { setStoredCartCount } from '../utils/cart';
-import { authHeaders, getStoredUser } from '../utils/session';
+import { authHeaders } from '../utils/session';
 
-const router = useRouter();
+defineOptions({
+  name: 'CheckoutPage',
+});
 
 const cart = ref({
   items: [],
@@ -111,30 +219,87 @@ const cart = ref({
   total: 0,
   cantidadItems: 0,
 });
+const catalogs = ref({
+  metodosPago: [],
+  provincias: [],
+  municipios: [],
+});
+const savedAddresses = ref([]);
 const loading = ref(true);
 const error = ref('');
 const feedback = ref('');
 const submitting = ref(false);
 const orderConfirmed = ref(null);
+const addressMode = ref('new');
 
-const storedUser = getStoredUser();
 const form = ref({
-  calle_envio: '',
-  numero_casa_envio: '',
-  municipio_envio: '',
-  provincia_envio: '',
+  id_metodo_pago: '',
+  id_direccion: '',
+  calle: '',
+  numero_casa: '',
+  detalle: '',
+  id_provincia: '',
+  id_municipio: '',
+  municipio_personalizado: '',
+  use_custom_municipio: false,
+  guardar_direccion: false,
 });
 
-const loadCart = async () => {
+const filteredMunicipios = computed(() =>
+  catalogs.value.municipios.filter(
+    (municipio) => Number(municipio.id_provincia) === Number(form.value.id_provincia),
+  ),
+);
+
+const selectedSavedAddress = computed(() =>
+  savedAddresses.value.find((address) => Number(address.id_direccion) === Number(form.value.id_direccion)) || null,
+);
+
+const shippingSummary = computed(() => {
+  if (!orderConfirmed.value) return '';
+  return [
+    orderConfirmed.value.calle_envio,
+    orderConfirmed.value.numero_casa_envio,
+    orderConfirmed.value.municipio_envio,
+    orderConfirmed.value.provincia_envio,
+  ]
+    .filter(Boolean)
+    .join(', ');
+});
+
+const handleProvinceChange = () => {
+  form.value.id_municipio = '';
+  form.value.municipio_personalizado = '';
+};
+
+const loadCheckoutData = async () => {
   loading.value = true;
   error.value = '';
 
   try {
-    cart.value = await apiFetch('/carrito', {
-      headers: authHeaders(),
-    });
+    const headers = authHeaders();
+    const [cartPayload, addressesPayload, catalogsPayload] = await Promise.all([
+      apiFetch('/carrito', { headers }),
+      apiFetch('/direcciones', { headers }),
+      apiFetch('/catalogos'),
+    ]);
 
-    if (!cart.value.items.length) {
+    cart.value = cartPayload;
+    savedAddresses.value = addressesPayload;
+    catalogs.value = {
+      metodosPago: catalogsPayload.metodosPago || [],
+      provincias: catalogsPayload.provincias || [],
+      municipios: catalogsPayload.municipios || [],
+    };
+
+    const principalAddress =
+      addressesPayload.find((address) => address.es_principal) || addressesPayload[0] || null;
+
+    form.value.id_metodo_pago = catalogs.value.metodosPago[0]?.id_metodo_pago || '';
+    form.value.id_direccion = principalAddress?.id_direccion || '';
+    addressMode.value = principalAddress ? 'saved' : 'new';
+
+    if (!cartPayload.items.length) {
       feedback.value = 'Tu carrito esta vacio. Agrega productos antes de procesar el checkout.';
     }
   } catch (err) {
@@ -142,6 +307,31 @@ const loadCart = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const buildCheckoutPayload = () => {
+  const payload = {
+    id_metodo_pago: form.value.id_metodo_pago,
+  };
+
+  if (addressMode.value === 'saved' && form.value.id_direccion) {
+    payload.id_direccion = form.value.id_direccion;
+    return payload;
+  }
+
+  payload.calle = form.value.calle;
+  payload.numero_casa = form.value.numero_casa;
+  payload.detalle = form.value.detalle;
+  payload.id_provincia = form.value.id_provincia;
+  payload.guardar_direccion = form.value.guardar_direccion;
+
+  if (form.value.use_custom_municipio) {
+    payload.municipio_personalizado = form.value.municipio_personalizado;
+  } else {
+    payload.id_municipio = form.value.id_municipio;
+  }
+
+  return payload;
 };
 
 const submitCheckout = async () => {
@@ -152,7 +342,7 @@ const submitCheckout = async () => {
     const response = await apiFetch('/checkout', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify(form.value),
+      body: JSON.stringify(buildCheckoutPayload()),
     });
 
     orderConfirmed.value = response.pedido;
@@ -165,16 +355,7 @@ const submitCheckout = async () => {
   }
 };
 
-onMounted(async () => {
-  form.value = {
-    calle_envio: '',
-    numero_casa_envio: '',
-    municipio_envio: storedUser?.municipio_envio || '',
-    provincia_envio: '',
-  };
-
-  await loadCart();
-});
+onMounted(loadCheckoutData);
 </script>
 
 <style scoped>
@@ -186,7 +367,8 @@ onMounted(async () => {
 
 .page-header,
 .checkout-layout,
-.summary-grid {
+.summary-grid,
+.mode-tabs {
   display: grid;
   gap: 24px;
 }
@@ -211,7 +393,8 @@ onMounted(async () => {
 }
 
 .ghost-link,
-.primary-link {
+.primary-link,
+.mode-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -223,12 +406,14 @@ onMounted(async () => {
   border: none;
 }
 
-.ghost-link {
+.ghost-link,
+.mode-button {
   background: rgba(15, 23, 42, 0.08);
   color: inherit;
 }
 
-.primary-link {
+.primary-link,
+.mode-button.active {
   background: linear-gradient(135deg, #0ea5e9, #2563eb);
   color: white;
 }
@@ -264,13 +449,36 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.checkout-form input {
+.checkout-form input,
+.checkout-form select,
+.checkout-form textarea {
   min-height: 48px;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   background: rgba(255, 255, 255, 0.7);
   padding: 0 1rem;
-  color: black; /*Previo inherit*/
+  color: black;
+}
+
+.checkout-form textarea {
+  min-height: 96px;
+  padding: 1rem;
+  resize: vertical;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.checkbox-row {
+  display: flex !important;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.checkbox-row input {
+  min-height: auto;
+  width: auto;
 }
 
 .action-button {
@@ -291,12 +499,13 @@ onMounted(async () => {
 .item-list {
   display: grid;
   gap: 10px;
-  color: black; /*lista de items letra negra*/
+  color: black;
 }
 
 .summary-item,
 .total-box,
-.summary-grid > div {
+.summary-grid > div,
+.address-preview {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.46);
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -311,13 +520,20 @@ onMounted(async () => {
 }
 
 .summary-item strong,
-.summary-item small {
+.summary-item small,
+.address-preview strong,
+.address-preview small {
   display: block;
 }
 
 .summary-item small,
-.success-card p {
+.success-card p,
+.address-preview small {
   color: var(--muted-light);
+}
+
+.address-preview {
+  padding: 1rem;
 }
 
 .total-box {
@@ -330,7 +546,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.75rem;
-  color: black; /*Letras negras para el resumen de la compra */
+  color: black;
 }
 
 .total-row {
@@ -361,26 +577,32 @@ onMounted(async () => {
 :global(.dark) .summary-item,
 :global(.dark) .total-box,
 :global(.dark) .summary-grid > div,
-:global(.dark) .checkout-form input {
+:global(.dark) .checkout-form input,
+:global(.dark) .checkout-form select,
+:global(.dark) .checkout-form textarea,
+:global(.dark) .address-preview {
   background: rgba(7, 14, 34, 0.75);
   border-color: rgba(148, 163, 184, 0.08);
   color: var(--text-light);
 }
 
-:global(.dark) .ghost-link {
+:global(.dark) .ghost-link,
+:global(.dark) .mode-button {
   background: rgba(148, 163, 184, 0.08);
 }
 
 :global(.dark) .summary-item small,
 :global(.dark) .success-card p,
-:global(.dark) .summary-grid small {
+:global(.dark) .summary-grid small,
+:global(.dark) .address-preview small {
   color: var(--muted-dark);
 }
 
 @media (max-width: 940px) {
   .page-header,
   .checkout-layout,
-  .summary-grid {
+  .summary-grid,
+  .mode-tabs {
     grid-template-columns: 1fr;
   }
 }
