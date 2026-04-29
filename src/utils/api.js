@@ -1,4 +1,5 @@
-export const API_BASE_URL = 'http://localhost:3000';
+require("dotenv").config({ path: require("path").join(__dirname, ".env") });
+export const API_BASE_URL = process.env.API_BASE_URL;
 export const API_URL = `${API_BASE_URL}/api`;
 export const ITBIS_RATE = 0.18;
 
