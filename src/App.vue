@@ -80,7 +80,14 @@ import { useRouter } from 'vue-router';
 import { LogOut, Moon, ShoppingCart, Sun } from 'lucide-vue-next';
 import emitter from './utils/emitter';
 import { apiFetch, buildImageUrl } from './utils/api';
-import { clearSession, getStoredUser, getToken, isAdminUser, updateStoredUser } from './utils/session';
+import {
+  clearSession,
+  getStoredUser,
+  getToken,
+  getUserHierarchyLevel,
+  isAdminUser,
+  updateStoredUser,
+} from './utils/session';
 import { getStoredCartCount, syncCartCount } from './utils/cart';
 
 const router = useRouter();
@@ -98,8 +105,10 @@ const avatarUrl = computed(() =>
 const isAdmin = computed(() => isAdminUser(usuario.value));
 
 const roleLabel = computed(() => {
-  if (Number(usuario.value?.id_rol) === 3) return 'Administrador';
-  if (Number(usuario.value?.id_rol) === 2) return 'Gerente de operaciones';
+  const hierarchy = getUserHierarchyLevel(usuario.value);
+  if (hierarchy >= 4) return 'Superadmin';
+  if (hierarchy === 3) return 'Administrador';
+  if (hierarchy === 2) return 'Gerente de operaciones';
   return 'Cliente';
 });
 

@@ -28,6 +28,7 @@
             <option value="1">Usuarios</option>
             <option v-if="!isManager" value="2">Administradores</option>
             <option v-if="!isManager" value="3">Gerentes</option>
+            <option v-if="currentHierarchy >= 4" value="4">Superadmin</option>
           </select>
         </label>
 
@@ -71,16 +72,20 @@
                   <span>{{ user.email }}</span>
                   <small>{{ user.telefono || 'Sin telefono' }}</small>
                 </td>
-                <td>{{ roleLabel(user.id_rol) }}</td>
+                <td>{{ user.Rol?.nombre || roleLabel(user.id_rol) }}</td>
                 <td>
                   <span class="status-pill" :class="{ inactive: user.activo === false }">
                     {{ user.activo === false ? 'Inactivo' : 'Activo' }}
                   </span>
                 </td>
                 <td>
-                  <button class="table-button" type="button" @click="openEditor(user)">
+                  <button v-if="canManage(user)" class="table-button" type="button" @click="openEditor(user)">
                     <Pencil :size="15" />
                     Editar
+                  </button>
+                  <button v-if="canManage(user)" class="table-button danger" type="button" @click="removeUser(user)">
+                    <Trash2 :size="15" />
+                    Borrar
                   </button>
                 </td>
               </tr>
@@ -118,10 +123,10 @@
           </label>
           <label class="full-width">
             Rol
-            <select v-model.number="editorForm.id_rol" :disabled="isManager">
-              <option value="1">Usuario</option>
-              <option v-if="!isManager" value="2">Administrador</option>
-              <option v-if="!isManager" value="3">Gerente</option>
+            <select v-model.number="editorForm.id_rol">
+              <option v-for="option in availableRoleOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
             </select>
           </label>
           <label class="full-width check-row">
@@ -146,9 +151,9 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { Pencil, RefreshCw, Save, X } from 'lucide-vue-next';
+import { Pencil, RefreshCw, Save, Trash2, X } from 'lucide-vue-next';
 import { apiFetch, buildImageUrl } from '../utils/api';
-import { authHeaders, getStoredUser } from '../utils/session';
+import { authHeaders, getStoredUser, getUserHierarchyLevel } from '../utils/session';
 
 const users = ref([]);
 const loading = ref(true);
@@ -169,7 +174,19 @@ const editorForm = ref({
 });
 
 const currentUser = getStoredUser();
-const isManager = computed(() => Number(currentUser?.id_rol) === 3);
+const currentHierarchy = computed(() => getUserHierarchyLevel(currentUser));
+const availableRoleOptions = computed(() => {
+  const allOptions = [
+    { value: 1, label: 'Usuario' },
+    { value: 2, label: 'Gerente' },
+    { value: 3, label: 'Administrador' },
+    { value: 4, label: 'Superadmin' },
+  ];
+
+  return allOptions.filter((option) => option.value < currentHierarchy.value);
+});
+
+const canManage = (user) => getUserHierarchyLevel(user) < currentHierarchy.value;
 
 const loadUsers = async () => {
   loading.value = true;
@@ -185,6 +202,7 @@ const loadUsers = async () => {
 };
 
 const roleLabel = (idRol) => {
+  if (Number(idRol) === 4) return 'Superadmin';
   if (Number(idRol) === 3) return 'Administrador';
   if (Number(idRol) === 2) return 'Gerente de operaciones';
   return 'Usuario';
@@ -231,7 +249,7 @@ const saveUser = async () => {
   try {
     const payload = {
       ...editorForm.value,
-      id_rol: isManager.value ? 1 : Number(editorForm.value.id_rol),
+      id_rol: Number(editorForm.value.id_rol),
     };
 
     const result = await apiFetch(`/admin/usuarios/${editingUser.value.id_usuario}`, {
@@ -249,6 +267,25 @@ const saveUser = async () => {
     feedback.value = err.message || 'No se pudo actualizar el usuario.';
   } finally {
     saving.value = false;
+  }
+};
+
+const removeUser = async (user) => {
+  const confirmed = window.confirm(`Borrar a ${user.nombre} ${user.apellido}?`);
+  if (!confirmed) return;
+
+  feedback.value = '';
+
+  try {
+    await apiFetch(`/admin/usuarios/${user.id_usuario}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+
+    users.value = users.value.filter((item) => item.id_usuario !== user.id_usuario);
+    feedback.value = 'Usuario desactivado correctamente.';
+  } catch (err) {
+    feedback.value = err.message || 'No se pudo desactivar el usuario.';
   }
 };
 
@@ -313,6 +350,10 @@ onMounted(loadUsers);
 .primary-button {
   color: white;
   background: linear-gradient(135deg, #0ea5e9, #2563eb);
+}
+
+.table-button.danger {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
 }
 
 .status-card,
