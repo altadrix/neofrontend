@@ -1,14 +1,24 @@
 import { clearSession, getToken } from './session';
 
-const rawApiBaseUrl =
-  typeof import.meta.env.VITE_SERVER_URL === 'string' && import.meta.env.VITE_SERVER_URL.trim()
-    ? import.meta.env.VITE_SERVER_URL.trim()
-    : typeof window !== 'undefined'
-      ? window.location.origin
-      : '';
+const configuredUrl = [
+  import.meta.env.VITE_API_URL,
+  import.meta.env.VITE_SERVER_URL,
+  import.meta.env.VITE_BACKEND_URL,
+]
+  .find((value) => typeof value === 'string' && value.trim())
+  ?.trim();
 
-export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
-export const API_URL = `${API_BASE_URL}/api`;
+const fallbackBaseUrl =
+  typeof window !== 'undefined'
+    ? window.location.origin
+    : '';
+
+const normalizedConfiguredUrl = (configuredUrl || '').replace(/\/+$/, '');
+
+export const API_BASE_URL = (normalizedConfiguredUrl || fallbackBaseUrl).replace(/\/api$/i, '');
+export const API_URL = /\/api$/i.test(normalizedConfiguredUrl)
+  ? normalizedConfiguredUrl
+  : `${API_BASE_URL}/api`;
 export const ITBIS_RATE = 0.18;
 
 const currencyFormatter = new Intl.NumberFormat('es-DO', {
@@ -49,7 +59,7 @@ export async function apiFetch(endpoint, options = {}) {
     headers,
     body: options.body,
     mode: 'cors',
-    credentials: 'include',
+    credentials: options.credentials || 'same-origin',
   };
 
   if (!(options.body instanceof FormData) && options.body !== undefined && !headers.has('Content-Type')) {

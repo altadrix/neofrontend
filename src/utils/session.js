@@ -2,6 +2,49 @@ import emitter from './emitter';
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
+const CART_KEY = 'cart-count';
+
+const decodeBase64Url = (value) => {
+  if (!value) return '';
+
+  try {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4 || 4)) % 4), '=');
+
+    if (typeof window !== 'undefined' && typeof window.atob === 'function') {
+      return window.atob(padded);
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+};
+
+const readTokenPayload = (token) => {
+  if (!token) return null;
+
+  const [, payloadPart] = String(token).split('.');
+  if (!payloadPart) return null;
+
+  const rawPayload = decodeBase64Url(payloadPart);
+  if (!rawPayload) return null;
+
+  try {
+    return JSON.parse(rawPayload);
+  } catch {
+    return null;
+  }
+};
+
+const isTokenExpired = (token) => {
+  const payload = readTokenPayload(token);
+  const exp = Number(payload?.exp || 0);
+
+  if (!exp) return false;
+
+  return Date.now() >= exp * 1000;
+};
 
 const normalizeStoredUser = (user) => {
   if (!user) return null;
@@ -19,10 +62,28 @@ const normalizeStoredUser = (user) => {
   };
 };
 
-export const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
+export const getToken = () => {
+  const token = localStorage.getItem(TOKEN_KEY) || '';
+  if (!token) return '';
+
+  if (isTokenExpired(token)) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.setItem(CART_KEY, '0');
+    emitter.emit('session-changed', null);
+    emitter.emit('cart-updated', 0);
+    return '';
+  }
+
+  return token;
+};
 
 export const getStoredUser = () => {
   try {
+    if (!getToken()) {
+      return null;
+    }
+
     const rawUser = localStorage.getItem(USER_KEY);
     return rawUser ? normalizeStoredUser(JSON.parse(rawUser)) : null;
   } catch {
@@ -57,7 +118,7 @@ export const updateStoredUser = (user) => {
 export const clearSession = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
-  localStorage.setItem('cart-count', '0');
+  localStorage.setItem(CART_KEY, '0');
   emitter.emit('session-changed', null);
   emitter.emit('cart-updated', 0);
 };

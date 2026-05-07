@@ -76,7 +76,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { LogOut, Moon, ShoppingCart, Sun } from 'lucide-vue-next';
 import emitter from './utils/emitter';
 import { apiFetch, buildImageUrl } from './utils/api';
@@ -91,6 +91,7 @@ import {
 import { getStoredCartCount, syncCartCount } from './utils/cart';
 
 const router = useRouter();
+const route = useRoute();
 const usuario = ref(getStoredUser());
 const isDarkMode = ref(localStorage.getItem('theme') !== 'light');
 const cartCount = ref(getStoredCartCount());
@@ -153,6 +154,13 @@ let offCart;
 onMounted(async () => {
   offSession = emitter.on('session-changed', (payload) => {
     usuario.value = payload;
+
+    if (!payload && route.meta.requiresAuth) {
+      router.replace({
+        name: 'Login',
+        query: { redirect: route.fullPath },
+      });
+    }
   });
 
   offCart = emitter.on('cart-updated', (payload) => {

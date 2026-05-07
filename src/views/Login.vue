@@ -35,6 +35,10 @@ import { apiFetch } from '../utils/api';
 import { saveSession } from '../utils/session';
 import { syncCartCount } from '../utils/cart';
 
+defineOptions({
+  name: 'LoginPage',
+});
+
 const router = useRouter();
 const route = useRoute();
 

@@ -70,6 +70,10 @@ const router = createRouter({
       component: () => import('../views/UserManagement.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/',
+    },
   ],
 });
 
