@@ -25,10 +25,9 @@
           Rol
           <select v-model="roleFilter">
             <option value="all">Todos</option>
-            <option value="1">Usuarios</option>
-            <option v-if="!isManager" value="2">Administradores</option>
-            <option v-if="!isManager" value="3">Gerentes</option>
-            <option v-if="currentHierarchy >= 4" value="4">Superadmin</option>
+            <option v-for="option in roleFilterOptions" :key="option.value" :value="String(option.value)">
+              {{ option.label }}
+            </option>
           </select>
         </label>
 
@@ -175,15 +174,19 @@ const editorForm = ref({
 
 const currentUser = getStoredUser();
 const currentHierarchy = computed(() => getUserHierarchyLevel(currentUser));
-const availableRoleOptions = computed(() => {
-  const allOptions = [
-    { value: 1, label: 'Usuario' },
-    { value: 2, label: 'Gerente' },
-    { value: 3, label: 'Administrador' },
-    { value: 4, label: 'Superadmin' },
-  ];
+const roleOptions = [
+  { value: 1, label: 'Usuario' },
+  { value: 2, label: 'Gerente de operaciones' },
+  { value: 3, label: 'Administrador' },
+  { value: 4, label: 'Superadmin' },
+];
 
-  return allOptions.filter((option) => option.value < currentHierarchy.value);
+const roleFilterOptions = computed(() =>
+  roleOptions.filter((option) => option.value <= currentHierarchy.value),
+);
+
+const availableRoleOptions = computed(() => {
+  return roleOptions.filter((option) => option.value < currentHierarchy.value);
 });
 
 const canManage = (user) => getUserHierarchyLevel(user) < currentHierarchy.value;
@@ -195,6 +198,16 @@ const loadUsers = async () => {
   try {
     users.value = await apiFetch('/admin/usuarios', { headers: authHeaders() });
   } catch (err) {
+    if (err.status === 401) {
+      error.value = 'Tu sesion vencio. Inicia sesion de nuevo para gestionar usuarios.';
+      return;
+    }
+
+    if (err.status === 403) {
+      error.value = 'Tu rol no tiene permiso para gestionar usuarios.';
+      return;
+    }
+
     error.value = err.message || 'No se pudo cargar la lista de usuarios.';
   } finally {
     loading.value = false;
@@ -264,7 +277,12 @@ const saveUser = async () => {
     feedback.value = 'Usuario actualizado correctamente.';
     closeEditor();
   } catch (err) {
-    feedback.value = err.message || 'No se pudo actualizar el usuario.';
+    feedback.value =
+      err.status === 403
+        ? 'Tu rol no puede aplicar ese cambio de usuario.'
+        : err.status === 401
+          ? 'Tu sesion vencio. Inicia sesion de nuevo para actualizar usuarios.'
+          : err.message || 'No se pudo actualizar el usuario.';
   } finally {
     saving.value = false;
   }
@@ -285,7 +303,12 @@ const removeUser = async (user) => {
     users.value = users.value.filter((item) => item.id_usuario !== user.id_usuario);
     feedback.value = 'Usuario desactivado correctamente.';
   } catch (err) {
-    feedback.value = err.message || 'No se pudo desactivar el usuario.';
+    feedback.value =
+      err.status === 403
+        ? 'Tu rol no puede desactivar este usuario.'
+        : err.status === 401
+          ? 'Tu sesion vencio. Inicia sesion de nuevo para gestionar usuarios.'
+          : err.message || 'No se pudo desactivar el usuario.';
   }
 };
 

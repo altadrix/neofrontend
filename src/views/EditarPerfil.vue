@@ -45,8 +45,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Camera } from 'lucide-vue-next';
-import { buildImageUrl } from '../utils/api';
-import { authHeaders, getStoredUser, updateStoredUser } from '../utils/session';
+import { apiFetch, buildImageUrl } from '../utils/api';
+import { getStoredUser, updateStoredUser } from '../utils/session';
 
 const router = useRouter();
 const storedUser = getStoredUser();
@@ -106,24 +106,20 @@ const saveChanges = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:3000/api/perfil', {
+    const payload = await apiFetch('/perfil', {
       method: 'PUT',
-      headers: authHeaders(),
       body: formData,
     });
-
-    const payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(payload.error || 'No se pudo actualizar el perfil.');
-    }
 
     updateStoredUser(payload);
     feedback.value = 'Perfil actualizado correctamente.';
     router.push('/');
   } catch (error) {
     isError.value = true;
-    feedback.value = error.message || 'No se pudo actualizar el perfil.';
+    feedback.value =
+      error.status === 401
+        ? 'Tu sesion vencio. Inicia sesion de nuevo para actualizar tu perfil.'
+        : error.message || 'No se pudo actualizar el perfil.';
   } finally {
     loading.value = false;
   }

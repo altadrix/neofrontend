@@ -1,6 +1,13 @@
-import { getToken } from './session';
+import { clearSession, getToken } from './session';
 
-export const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
+const rawApiBaseUrl =
+  typeof import.meta.env.VITE_SERVER_URL === 'string' && import.meta.env.VITE_SERVER_URL.trim()
+    ? import.meta.env.VITE_SERVER_URL.trim()
+    : typeof window !== 'undefined'
+      ? window.location.origin
+      : '';
+
+export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 export const API_URL = `${API_BASE_URL}/api`;
 export const ITBIS_RATE = 0.18;
 
@@ -61,7 +68,18 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    const error = new Error(payload?.error || payload?.message || 'No se pudo completar la solicitud.');
+    if (response.status === 401) {
+      clearSession();
+    }
+
+    const fallbackMessage =
+      response.status === 401
+        ? 'Tu sesion ha expirado. Inicia sesion de nuevo.'
+        : response.status === 403
+          ? 'No tienes permisos para realizar esta accion.'
+          : 'No se pudo completar la solicitud.';
+
+    const error = new Error(payload?.error || payload?.message || fallbackMessage);
     error.status = response.status;
     error.payload = payload;
     throw error;

@@ -412,6 +412,16 @@ const loadAdminData = async () => {
       metodosPago: catalogPayload.metodosPago || [],
     };
   } catch (error) {
+    if (error.status === 401) {
+      mostrarMensaje('Tu sesion vencio. Inicia sesion de nuevo para seguir administrando productos.', true);
+      return;
+    }
+
+    if (error.status === 403) {
+      mostrarMensaje('Tu rol no tiene permiso para acceder a la administracion de productos.', true);
+      return;
+    }
+
     mostrarMensaje(error.message || 'No se pudieron cargar los datos administrativos.', true);
   }
 };
@@ -450,21 +460,26 @@ const handleSubmit = async () => {
 
   try {
     const endpoint = editMode.value ? `/productos/${productoActualId.value}` : '/productos';
-    const response = await fetch(`http://localhost:3000/api${endpoint}`, {
+    await apiFetch(endpoint, {
       method: editMode.value ? 'PUT' : 'POST',
       headers: authHeaders(),
       body: formData,
     });
 
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || 'No se pudo guardar el producto.');
-    }
-
     mostrarMensaje(editMode.value ? 'Producto actualizado.' : 'Producto registrado.');
     resetForm();
     await loadAdminData();
   } catch (error) {
+    if (error.status === 401) {
+      mostrarMensaje('Tu sesion vencio. Inicia sesion de nuevo para guardar cambios.', true);
+      return;
+    }
+
+    if (error.status === 403) {
+      mostrarMensaje('Tu rol no tiene permiso para crear o editar productos.', true);
+      return;
+    }
+
     mostrarMensaje(error.message || 'No se pudo guardar el producto.', true);
   }
 };
@@ -500,6 +515,16 @@ const eliminarProducto = async (idProducto) => {
     mostrarMensaje('Producto desactivado.');
     await loadAdminData();
   } catch (error) {
+    if (error.status === 401) {
+      mostrarMensaje('Tu sesion vencio. Inicia sesion de nuevo para desactivar productos.', true);
+      return;
+    }
+
+    if (error.status === 403) {
+      mostrarMensaje('Tu rol no tiene permiso para desactivar productos.', true);
+      return;
+    }
+
     mostrarMensaje(error.message || 'No se pudo desactivar el producto.', true);
   }
 };
@@ -562,6 +587,16 @@ const saveCatalogItem = async () => {
     resetCatalogForm();
     await loadAdminData();
   } catch (error) {
+    if (error.status === 401) {
+      mostrarMensaje('Tu sesion vencio. Inicia sesion de nuevo para actualizar catalogos.', true);
+      return;
+    }
+
+    if (error.status === 403) {
+      mostrarMensaje('Tu rol no tiene permiso para actualizar catalogos administrativos.', true);
+      return;
+    }
+
     mostrarMensaje(error.message || 'No se pudo guardar el catalogo.', true);
   }
 };
