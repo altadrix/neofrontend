@@ -1,3 +1,5 @@
+import { getToken } from './session';
+
 export const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 export const API_URL = `${API_BASE_URL}/api`;
 export const ITBIS_RATE = 0.18;
@@ -29,10 +31,18 @@ export const buildImageUrl = (relativePath, fallback = '') => {
 
 export async function apiFetch(endpoint, options = {}) {
   const headers = new Headers(options.headers || {});
+  const token = getToken();
+
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
   const requestOptions = {
     method: options.method || 'GET',
     headers,
     body: options.body,
+    mode: 'cors',
+    credentials: 'include',
   };
 
   if (!(options.body instanceof FormData) && options.body !== undefined && !headers.has('Content-Type')) {

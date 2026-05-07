@@ -39,6 +39,16 @@
           </div>
         </div>
 
+        <a
+          v-if="orderConfirmed.factura_pdf_url"
+          :href="orderConfirmed.factura_pdf_url"
+          class="primary-link"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Descargar factura PDF
+        </a>
+
         <RouterLink to="/" class="primary-link">Volver a la tienda</RouterLink>
       </div>
 
@@ -81,6 +91,19 @@
               </select>
             </label>
 
+            <div class="coupon-panel">
+              <label>
+                Cupon
+                <input v-model.trim="couponCode" type="text" placeholder="Ingresa tu codigo" />
+              </label>
+
+              <button class="ghost-link coupon-button" type="button" @click="validateCoupon">
+                Aplicar cupon
+              </button>
+            </div>
+
+            <p v-if="couponFeedback" class="coupon-feedback">{{ couponFeedback }}</p>
+
             <template v-if="addressMode === 'saved' && savedAddresses.length">
               <label>
                 Direccion guardada
@@ -97,63 +120,19 @@
                   {{ selectedSavedAddress.municipio_nombre }},
                   {{ selectedSavedAddress.provincia_nombre }}
                 </small>
+                <small v-if="selectedSavedAddress.sector">Sector: {{ selectedSavedAddress.sector }}</small>
+                <small v-if="selectedSavedAddress.referencia">{{ selectedSavedAddress.referencia }}</small>
                 <small v-if="selectedSavedAddress.detalle">{{ selectedSavedAddress.detalle }}</small>
               </div>
             </template>
 
             <template v-else>
-              <label>
-                Calle
-                <input v-model.trim="form.calle" type="text" required />
-              </label>
-
-              <label>
-                Numero o referencia
-                <input v-model.trim="form.numero_casa" type="text" required />
-              </label>
-
-              <label class="full-width">
-                Detalle adicional
-                <textarea v-model.trim="form.detalle" rows="3"></textarea>
-              </label>
-
-              <label>
-                Provincia
-                <select v-model.number="form.id_provincia" required @change="handleProvinceChange">
-                  <option value="" disabled>Selecciona una provincia</option>
-                  <option
-                    v-for="province in catalogs.provincias"
-                    :key="province.id_provincia"
-                    :value="province.id_provincia"
-                  >
-                    {{ province.nombre }}
-                  </option>
-                </select>
-              </label>
-
-              <label class="checkbox-row">
-                <input v-model="form.use_custom_municipio" type="checkbox" />
-                No encuentro mi municipio en la lista
-              </label>
-
-              <label v-if="!form.use_custom_municipio">
-                Municipio
-                <select v-model.number="form.id_municipio" required>
-                  <option value="" disabled>Selecciona un municipio</option>
-                  <option
-                    v-for="municipio in filteredMunicipios"
-                    :key="municipio.id_municipio"
-                    :value="municipio.id_municipio"
-                  >
-                    {{ municipio.nombre }}
-                  </option>
-                </select>
-              </label>
-
-              <label v-else>
-                Municipio personalizado
-                <input v-model.trim="form.municipio_personalizado" type="text" required />
-              </label>
+              <SmartAddressForm
+                v-model="form"
+                :municipalities="catalogs.municipios"
+                :provinces="catalogs.provincias"
+                @error="feedback = $event"
+              />
 
               <label class="checkbox-row">
                 <input v-model="form.guardar_direccion" type="checkbox" />
@@ -185,15 +164,19 @@
           <div class="total-box">
             <div class="summary-row">
               <span>Subtotal</span>
-              <strong>{{ formatCurrency(cart.subtotal) }}</strong>
+              <strong>{{ formatCurrency(summarySubtotal) }}</strong>
+            </div>
+            <div v-if="couponPreview" class="summary-row">
+              <span>Descuento</span>
+              <strong>-{{ formatCurrency(couponPreview.descuento) }}</strong>
             </div>
             <div class="summary-row">
               <span>ITBIS (18%)</span>
-              <strong>{{ formatCurrency(cart.itbis) }}</strong>
+              <strong>{{ formatCurrency(summaryItbis) }}</strong>
             </div>
             <div class="summary-row total-row">
               <span>Total</span>
-              <strong>{{ formatCurrency(cart.total) }}</strong>
+              <strong>{{ formatCurrency(summaryTotal) }}</strong>
             </div>
           </div>
         </aside>
@@ -203,7 +186,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import SmartAddressForm from '../components/SmartAddressForm.vue';
 import { apiFetch, formatCurrency } from '../utils/api';
 import { setStoredCartCount } from '../utils/cart';
 import { authHeaders } from '../utils/session';
@@ -228,16 +212,22 @@ const savedAddresses = ref([]);
 const loading = ref(true);
 const error = ref('');
 const feedback = ref('');
+const couponFeedback = ref('');
 const submitting = ref(false);
 const orderConfirmed = ref(null);
 const addressMode = ref('new');
+const couponCode = ref('');
+const couponPreview = ref(null);
 
 const form = ref({
   id_metodo_pago: '',
   id_direccion: '',
   calle: '',
   numero_casa: '',
-  detalle: '',
+  sector: '',
+  referencia: '',
+  latitud: '',
+  longitud: '',
   id_provincia: '',
   id_municipio: '',
   municipio_personalizado: '',
@@ -245,32 +235,35 @@ const form = ref({
   guardar_direccion: false,
 });
 
-const filteredMunicipios = computed(() =>
-  catalogs.value.municipios.filter(
-    (municipio) => Number(municipio.id_provincia) === Number(form.value.id_provincia),
-  ),
+const selectedSavedAddress = computed(
+  () =>
+    savedAddresses.value.find((address) => Number(address.id_direccion) === Number(form.value.id_direccion)) ||
+    null,
 );
 
-const selectedSavedAddress = computed(() =>
-  savedAddresses.value.find((address) => Number(address.id_direccion) === Number(form.value.id_direccion)) || null,
-);
+const summarySubtotal = computed(() => couponPreview.value?.subtotal_con_descuento ?? cart.value.subtotal);
+const summaryItbis = computed(() => couponPreview.value?.itbis ?? cart.value.itbis);
+const summaryTotal = computed(() => couponPreview.value?.total ?? cart.value.total);
 
 const shippingSummary = computed(() => {
   if (!orderConfirmed.value) return '';
+  const address = orderConfirmed.value.ubicacion || orderConfirmed.value.Direccion || {};
   return [
-    orderConfirmed.value.calle_envio,
-    orderConfirmed.value.numero_casa_envio,
-    orderConfirmed.value.municipio_envio,
-    orderConfirmed.value.provincia_envio,
+    address.calle,
+    address.numero_casa,
+    address.sector,
+    address.referencia,
+    address.municipio_nombre,
+    address.provincia_nombre,
   ]
     .filter(Boolean)
     .join(', ');
 });
 
-const handleProvinceChange = () => {
-  form.value.id_municipio = '';
-  form.value.municipio_personalizado = '';
-};
+watch(couponCode, () => {
+  couponPreview.value = null;
+  couponFeedback.value = '';
+});
 
 const loadCheckoutData = async () => {
   loading.value = true;
@@ -298,6 +291,9 @@ const loadCheckoutData = async () => {
     form.value.id_metodo_pago = catalogs.value.metodosPago[0]?.id_metodo_pago || '';
     form.value.id_direccion = principalAddress?.id_direccion || '';
     addressMode.value = principalAddress ? 'saved' : 'new';
+    couponPreview.value = null;
+    couponFeedback.value = '';
+    couponCode.value = '';
 
     if (!cartPayload.items.length) {
       feedback.value = 'Tu carrito esta vacio. Agrega productos antes de procesar el checkout.';
@@ -321,7 +317,10 @@ const buildCheckoutPayload = () => {
 
   payload.calle = form.value.calle;
   payload.numero_casa = form.value.numero_casa;
-  payload.detalle = form.value.detalle;
+  payload.sector = form.value.sector;
+  payload.referencia = form.value.referencia;
+  payload.latitud = form.value.latitud;
+  payload.longitud = form.value.longitud;
   payload.id_provincia = form.value.id_provincia;
   payload.guardar_direccion = form.value.guardar_direccion;
 
@@ -334,20 +333,58 @@ const buildCheckoutPayload = () => {
   return payload;
 };
 
+const validateCoupon = async () => {
+  couponFeedback.value = '';
+  couponPreview.value = null;
+
+  if (!couponCode.value) {
+    couponFeedback.value = 'Escribe un cupon antes de validarlo.';
+    return;
+  }
+
+  try {
+    const result = await apiFetch('/cupones/validar', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ codigo_cupon: couponCode.value }),
+    });
+
+    couponPreview.value = result;
+    couponFeedback.value = `Cupon ${result.cupon?.codigo_cupon || couponCode.value} aplicado correctamente.`;
+  } catch (err) {
+    couponFeedback.value = err.message || 'No se pudo validar el cupon.';
+  }
+};
+
 const submitCheckout = async () => {
   feedback.value = '';
   submitting.value = true;
 
   try {
+    const previousSubtotal = Number(cart.value.subtotal || 0);
+    const codigoCupon = couponPreview.value?.cupon?.codigo_cupon || couponCode.value || '';
     const response = await apiFetch('/checkout', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify(buildCheckoutPayload()),
+      body: JSON.stringify({
+        ...buildCheckoutPayload(),
+        codigo_cupon: codigoCupon,
+      }),
     });
 
     orderConfirmed.value = response.pedido;
     cart.value = response.carrito;
     setStoredCartCount(response.carrito.cantidadItems);
+
+    if (response.cupon) {
+      couponPreview.value = {
+        cupon: response.cupon,
+        subtotal_con_descuento: response.pedido.subtotal,
+        itbis: response.pedido.itbis,
+        total: response.pedido.total,
+        descuento: Math.max(previousSubtotal - Number(response.pedido.subtotal), 0),
+      };
+    }
   } catch (err) {
     feedback.value = err.message || 'No se pudo confirmar el pedido.';
   } finally {
@@ -466,8 +503,37 @@ onMounted(loadCheckoutData);
   resize: vertical;
 }
 
-.full-width {
-  width: 100%;
+.coupon-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.coupon-button {
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.coupon-feedback,
+.feedback {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: rgba(14, 165, 233, 0.1);
+  color: #0f172a;
+}
+
+.address-preview {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.address-preview small {
+  color: #475569;
 }
 
 .checkbox-row {
@@ -478,131 +544,75 @@ onMounted(loadCheckoutData);
 
 .checkbox-row input {
   min-height: auto;
-  width: auto;
 }
 
 .action-button {
   width: 100%;
-  cursor: pointer;
 }
 
-.feedback {
-  color: #0284c7;
-  font-weight: 600;
-}
-
-.summary-panel h2,
-.form-panel h2 {
-  margin-top: 0;
+.summary-panel {
+  display: grid;
+  gap: 18px;
 }
 
 .item-list {
   display: grid;
-  gap: 10px;
-  color: black;
-}
-
-.summary-item,
-.total-box,
-.summary-grid > div,
-.address-preview {
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.46);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  gap: 14px;
 }
 
 .summary-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
+  gap: 16px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.06);
 }
 
 .summary-item strong,
-.summary-item small,
-.address-preview strong,
-.address-preview small {
+.summary-item small {
   display: block;
 }
 
-.summary-item small,
-.success-card p,
-.address-preview small {
-  color: var(--muted-light);
-}
-
-.address-preview {
-  padding: 1rem;
+.summary-item small {
+  color: #64748b;
+  margin-top: 0.2rem;
 }
 
 .total-box {
-  margin-top: 1rem;
-  padding: 1rem;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(14, 165, 233, 0.08);
 }
 
 .summary-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
-  color: black;
+  gap: 12px;
 }
 
 .total-row {
-  margin-top: 0.9rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  font-size: 1.08rem;
+  font-weight: 800;
 }
 
 .summary-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 1rem 0;
 }
 
-.summary-grid > div {
-  padding: 1rem;
+@media (max-width: 900px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
-.summary-grid small {
-  display: block;
-  color: var(--muted-light);
-  margin-bottom: 0.25rem;
-}
-
-:global(.dark) .status-card,
-:global(.dark) .form-panel,
-:global(.dark) .summary-panel,
-:global(.dark) .success-card,
-:global(.dark) .summary-item,
-:global(.dark) .total-box,
-:global(.dark) .summary-grid > div,
-:global(.dark) .checkout-form input,
-:global(.dark) .checkout-form select,
-:global(.dark) .checkout-form textarea,
-:global(.dark) .address-preview {
-  background: rgba(7, 14, 34, 0.75);
-  border-color: rgba(148, 163, 184, 0.08);
-  color: var(--text-light);
-}
-
-:global(.dark) .ghost-link,
-:global(.dark) .mode-button {
-  background: rgba(148, 163, 184, 0.08);
-}
-
-:global(.dark) .summary-item small,
-:global(.dark) .success-card p,
-:global(.dark) .summary-grid small,
-:global(.dark) .address-preview small {
-  color: var(--muted-dark);
-}
-
-@media (max-width: 940px) {
+@media (max-width: 640px) {
   .page-header,
-  .checkout-layout,
-  .summary-grid,
-  .mode-tabs {
+  .coupon-panel,
+  .summary-grid {
     grid-template-columns: 1fr;
   }
 }

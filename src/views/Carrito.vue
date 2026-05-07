@@ -16,7 +16,7 @@
         <div v-if="!cart.items.length" class="empty-card">
           <ShoppingCart class="empty-icon" :size="40" />
           <h2>Tu carrito esta vacio</h2>
-          <p>Agrega un juego y el navbar reaccionara automaticamente con la nueva cantidad.</p>
+          <p>Agrega un juego para verlo aquí</p>
           <RouterLink to="/" class="checkout-link">Volver al catalogo</RouterLink>
         </div>
 
@@ -216,6 +216,7 @@ onMounted(fetchCart);
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.56);
   backdrop-filter: blur(22px);
+  color:black
 }
 
 .status-card {

@@ -105,6 +105,7 @@
               <tr>
                 <th>ID</th>
                 <th>Cliente</th>
+                <th>Ubicacion</th>
                 <th>Total</th>
                 <th>Estado</th>
                 <th>Actualizar</th>
@@ -114,6 +115,12 @@
               <tr v-for="pedido in orders" :key="pedido.id_pedido">
                 <td>#{{ pedido.id_pedido }}</td>
                 <td>{{ pedido.Cliente?.nombre }} {{ pedido.Cliente?.apellido }}</td>
+                <td>
+                  <div class="address-cell" :title="locationTooltip(pedido)">
+                    <strong>{{ pedido.ubicacion?.calle || 'Sin calle' }}</strong>
+                    <small>{{ locationSummary(pedido) }}</small>
+                  </div>
+                </td>
                 <td>{{ formatCurrency(pedido.total) }}</td>
                 <td>
                   <select
@@ -323,18 +330,37 @@ const updateStatusDraft = (idPedido, value) => {
   };
 };
 
+const locationSummary = (pedido) => {
+  const ubicacion = pedido.ubicacion || {};
+  return [ubicacion.sector, ubicacion.referencia].filter(Boolean).join(' · ') || 'Sin sector ni referencia';
+};
+
+const locationTooltip = (pedido) => {
+  const ubicacion = pedido.ubicacion || {};
+  return [
+    `Calle: ${ubicacion.calle || 'N/D'}`,
+    `Numero: ${ubicacion.numero_casa || 'N/D'}`,
+    `Provincia: ${ubicacion.provincia_nombre || 'N/D'}`,
+    `Municipio: ${ubicacion.municipio_nombre || 'N/D'}`,
+    `Sector: ${ubicacion.sector || 'N/D'}`,
+    `Referencia: ${ubicacion.referencia || 'N/D'}`,
+  ].join('\n');
+};
+
 const saveOrderStatus = async (pedido) => {
   feedback.value = '';
 
   try {
-    await apiFetch(`/admin/pedidos/${pedido.id_pedido}/estado`, {
+    const response = await apiFetch(`/admin/pedidos/${pedido.id_pedido}/estado`, {
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify({ id_estado_pedido: Number(statusDrafts.value[pedido.id_pedido]) }),
     });
 
     await loadAdminData();
-    feedback.value = `Pedido #${pedido.id_pedido} actualizado.`;
+    feedback.value = response.factura_pdf_url
+      ? `Pedido #${pedido.id_pedido} actualizado y factura generada.`
+      : `Pedido #${pedido.id_pedido} actualizado.`;
   } catch (err) {
     feedback.value = err.message || 'No se pudo actualizar el pedido.';
   }
@@ -574,6 +600,15 @@ tr.danger {
 .review-copy,
 .review-top p,
 .empty-copy {
+  color: var(--muted-light);
+}
+
+.address-cell {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.address-cell small {
   color: var(--muted-light);
 }
 
