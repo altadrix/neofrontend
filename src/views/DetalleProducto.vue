@@ -101,7 +101,7 @@
                     v-for="star in 5"
                     :key="star"
                     class="star-icon"
-                    :class="{ active: star <= resena.puntuacion }"
+                    :class="{ active: star <= reviewScore(resena) }"
                   >
                     <Star :size="15" />
                   </span>
@@ -234,6 +234,11 @@ const reviewAvatar = (resena) =>
     resena.Usuario?.avatar_url,
     `https://ui-avatars.com/api/?name=${encodeURIComponent(resena.Usuario?.nombre || 'Neo')}&background=0f172a&color=fff`,
   );
+
+const reviewScore = (resena) => {
+  const score = Number(resena?.puntuacion);
+  return Number.isFinite(score) ? score : 0;
+};
 
 watch(
   () => route.params.id,

@@ -45,7 +45,7 @@
               <div>
                 <span class="user-name">{{ res.Usuario.nombre }} {{ res.Usuario.apellido }}</span>
                 <div class="stars-display">
-                  <span v-for="i in 5" :key="i" class="s-mini" :class="{ on: i <= res.puntuacion }">
+                  <span v-for="i in 5" :key="i" class="s-mini" :class="{ on: i <= reviewScore(res) }">
                     <Star :size="12" />
                   </span>
                 </div>
@@ -72,6 +72,11 @@ const newReview = ref({ puntuacion: 5, comentario: '' });
 
 const loadData = async () => {
   game.value = await apiFetch(`/productos/${route.params.id}`);
+};
+
+const reviewScore = (resena) => {
+  const score = Number(resena?.puntuacion);
+  return Number.isFinite(score) ? score : 0;
 };
 
 const enviarResena = async () => {
