@@ -2,10 +2,10 @@
   <div class="cart-page">
     <header class="page-header">
       <div>
-        <p class="eyebrow">Carrito sincronizado</p>
-        <h1>Tu carrito de NeoGaming</h1>
+        <p class="eyebrow">Carrito</p>
+        <h1>Tu carrito</h1>
       </div>
-      <RouterLink v-if="cart.items.length" to="/checkout" class="checkout-link">Ir a checkout</RouterLink>
+      <RouterLink v-if="cart.items.length" to="/checkout" class="checkout-link">Continuar compra</RouterLink>
     </header>
 
     <div v-if="loading" class="status-card">Cargando carrito...</div>
@@ -15,9 +15,9 @@
       <section class="items-panel">
         <div v-if="!cart.items.length" class="empty-card">
           <ShoppingCart class="empty-icon" :size="40" />
-          <h2>Tu carrito esta vacio</h2>
-          <p>Agrega un juego para verlo aquí</p>
-          <RouterLink to="/" class="checkout-link">Volver al catalogo</RouterLink>
+          <h2>Tu carrito está vacío</h2>
+          <p>Agrega productos para verlos aquí.</p>
+          <RouterLink to="/" class="checkout-link">Volver al catálogo</RouterLink>
         </div>
 
         <div v-else class="items-list">
@@ -51,7 +51,7 @@
 
       <aside class="summary-panel">
         <div class="summary-card">
-          <h2>Resumen fiscal</h2>
+          <h2>Resumen de compra</h2>
 
           <div class="summary-row">
             <span>Subtotal</span>
@@ -84,6 +84,10 @@ import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-vue-next';
 import { apiFetch, buildImageUrl, formatCurrency } from '../utils/api';
 import { setStoredCartCount } from '../utils/cart';
 import { authHeaders } from '../utils/session';
+
+defineOptions({
+  name: 'CarritoPage',
+});
 
 const router = useRouter();
 const cart = ref({
@@ -148,7 +152,7 @@ const removeItem = async (idDetalle) => {
     });
     applyCartPayload(payload);
   } catch (err) {
-    feedback.value = err.message || 'No se pudo eliminar el item.';
+    feedback.value = err.message || 'No se pudo quitar el producto.';
   } finally {
     mutating.value = false;
   }

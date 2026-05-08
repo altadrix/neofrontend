@@ -2,8 +2,8 @@
   <div class="checkout-page">
     <header class="page-header">
       <div>
-        <p class="eyebrow">Checkout</p>
-        <h1>Cerrar pedido con direccion normalizada</h1>
+        <p class="eyebrow">Compra</p>
+        <h1>Datos de entrega y pago</h1>
       </div>
       <RouterLink to="/carrito" class="ghost-link">Volver al carrito</RouterLink>
     </header>
@@ -16,8 +16,7 @@
         <p class="eyebrow">Pedido confirmado</p>
         <h2>Orden #{{ orderConfirmed.id_pedido }}</h2>
         <p>
-          El pedido quedo en estado {{ orderConfirmed.Estado?.nombre?.toLowerCase() || 'confirmado' }}
-          y el inventario ya fue descontado del stock general del producto.
+          Tu pedido quedó en estado {{ orderConfirmed.Estado?.nombre?.toLowerCase() || 'confirmado' }}.
         </p>
 
         <div class="summary-grid">
@@ -30,7 +29,7 @@
             <strong>{{ formatCurrency(orderConfirmed.itbis) }}</strong>
           </div>
           <div>
-            <small>Metodo de pago</small>
+            <small>Método de pago</small>
             <strong>{{ orderConfirmed.MetodoPago?.nombre || 'No definido' }}</strong>
           </div>
           <div>
@@ -65,7 +64,7 @@
                 :disabled="!savedAddresses.length"
                 @click="addressMode = 'saved'"
               >
-                Direccion guardada
+                Dirección guardada
               </button>
               <button
                 type="button"
@@ -73,14 +72,14 @@
                 :class="{ active: addressMode === 'new' }"
                 @click="addressMode = 'new'"
               >
-                Nueva direccion
+                Nueva dirección
               </button>
             </div>
 
             <label>
-              Metodo de pago
+              Método de pago
               <select v-model.number="form.id_metodo_pago" required>
-                <option value="" disabled>Selecciona un metodo</option>
+                <option value="" disabled>Selecciona un método</option>
                 <option
                   v-for="method in catalogs.metodosPago"
                   :key="method.id_metodo_pago"
@@ -93,12 +92,12 @@
 
             <div class="coupon-panel">
               <label>
-                Cupon
-                <input v-model.trim="couponCode" type="text" placeholder="Ingresa tu codigo" />
+                Cupón
+                <input v-model.trim="couponCode" type="text" placeholder="Ingresa tu código" />
               </label>
 
               <button class="ghost-link coupon-button" type="button" @click="validateCoupon">
-                Aplicar cupon
+                Aplicar cupón
               </button>
             </div>
 
@@ -106,7 +105,7 @@
 
             <template v-if="addressMode === 'saved' && savedAddresses.length">
               <label>
-                Direccion guardada
+                Dirección guardada
                 <select v-model.number="form.id_direccion">
                   <option v-for="address in savedAddresses" :key="address.id_direccion" :value="address.id_direccion">
                     {{ address.calle }}, {{ address.numero_casa }} - {{ address.municipio_nombre }}
@@ -136,7 +135,7 @@
 
               <label class="checkbox-row">
                 <input v-model="form.guardar_direccion" type="checkbox" />
-                Guardar esta direccion en mi perfil
+                Guardar esta dirección en mi perfil
               </label>
             </template>
 
@@ -296,10 +295,10 @@ const loadCheckoutData = async () => {
     couponCode.value = '';
 
     if (!cartPayload.items.length) {
-      feedback.value = 'Tu carrito esta vacio. Agrega productos antes de procesar el checkout.';
+      feedback.value = 'Tu carrito está vacío. Agrega productos antes de confirmar la compra.';
     }
   } catch (err) {
-    error.value = err.message || 'No se pudo cargar el checkout.';
+    error.value = err.message || 'No se pudo cargar la compra.';
   } finally {
     loading.value = false;
   }
@@ -338,7 +337,7 @@ const validateCoupon = async () => {
   couponPreview.value = null;
 
   if (!couponCode.value) {
-    couponFeedback.value = 'Escribe un cupon antes de validarlo.';
+    couponFeedback.value = 'Escribe un cupón antes de validarlo.';
     return;
   }
 
@@ -350,9 +349,9 @@ const validateCoupon = async () => {
     });
 
     couponPreview.value = result;
-    couponFeedback.value = `Cupon ${result.cupon?.codigo_cupon || couponCode.value} aplicado correctamente.`;
+    couponFeedback.value = `Cupón ${result.cupon?.codigo_cupon || couponCode.value} aplicado correctamente.`;
   } catch (err) {
-    couponFeedback.value = err.message || 'No se pudo validar el cupon.';
+    couponFeedback.value = err.message || 'No se pudo validar el cupón.';
   }
 };
 

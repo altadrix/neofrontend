@@ -17,7 +17,7 @@
       </div>
 
       <p class="game-description">
-        {{ game.descripcion || 'Este titulo ya esta listo para entrar al checkout de NeoGaming.' }}
+        {{ game.descripcion || 'Producto disponible en tienda.' }}
       </p>
 
       <div class="card-footer">
@@ -29,7 +29,7 @@
         </div>
 
         <div class="card-actions">
-          <button class="ghost-button" type="button" @click="goToDetail">Ficha</button>
+          <button class="ghost-button" type="button" @click="goToDetail">Detalle</button>
           <button class="primary-button" type="button" :disabled="adding" @click="addToCart(false)">
             {{ adding ? 'Agregando...' : 'Agregar' }}
           </button>
@@ -68,7 +68,7 @@ const imageUrl = computed(() =>
 );
 
 const stockLabel = computed(() => {
-  if (props.game.stock_disponible == null) return 'Inventario a confirmar';
+  if (props.game.stock_disponible == null) return 'Stock por confirmar';
   return `${props.game.stock_disponible} en stock`;
 });
 
@@ -100,7 +100,7 @@ const addToCart = async (redirectToCheckout) => {
     });
 
     setStoredCartCount(cart.cantidadItems);
-    feedback.value = 'Juego agregado al carrito.';
+    feedback.value = 'Producto agregado al carrito.';
 
     if (redirectToCheckout) {
       router.push('/checkout');

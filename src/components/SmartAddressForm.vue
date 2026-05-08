@@ -2,9 +2,9 @@
   <section class="smart-address">
     <header class="smart-address__header">
       <div>
-        <p class="smart-address__eyebrow">Dirección inteligente</p>
-        <h3>Detecta tu ubicación y ajusta la entrega</h3>
-        <small>La sugerencia automática se puede editar campo por campo antes de confirmar.</small>
+        <p class="smart-address__eyebrow">Dirección de entrega</p>
+        <h3>Completa dónde quieres recibir tu pedido</h3>
+        <small>Puedes usar tu ubicación actual y ajustar los datos antes de confirmar.</small>
       </div>
 
       <button
@@ -13,7 +13,7 @@
         :disabled="geoBusy || !geoSupported"
         @click="detectLocation"
       >
-        {{ geoBusy ? 'Detectando...' : 'Detectar ubicación' }}
+        {{ geoBusy ? 'Detectando...' : 'Usar mi ubicación' }}
       </button>
     </header>
 
@@ -26,7 +26,7 @@
       </label>
 
       <label>
-        Numero de casa
+        Número de casa
         <input v-model.trim="localAddress.numero_casa" type="text" required />
       </label>
 

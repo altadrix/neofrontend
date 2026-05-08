@@ -5,7 +5,7 @@
         <img :src="buildImageUrl(game.imagen_url)" class="main-poster" />
         <div class="main-info">
           <h1 class="neo-title">{{ game.titulo }}</h1>
-          <p class="description">{{ game.descripcion || 'Sin descripcion.' }}</p>
+          <p class="description">{{ game.descripcion || 'Sin descripción.' }}</p>
           <div class="price-tag">RD$ {{ game.precio || '2,500' }}</div>
         </div>
       </div>
@@ -14,9 +14,9 @@
     <section class="reviews-section">
       <div class="reviews-wrapper">
         <div class="flex-header">
-          <h2 class="neon-text">RESENAS DE LA COMUNIDAD</h2>
+          <h2 class="neon-text">RESEÑAS DE LA COMUNIDAD</h2>
           <button @click="showForm = !showForm" class="btn-neo">
-            {{ showForm ? 'Cerrar' : 'Escribir opinion' }}
+            {{ showForm ? 'Cerrar' : 'Escribir opinión' }}
           </button>
         </div>
 
@@ -32,12 +32,12 @@
               <Star :size="22" />
             </span>
           </div>
-          <textarea v-model="newReview.comentario" placeholder="Que te parecio el juego?"></textarea>
-          <button @click="enviarResena" class="btn-send">Publicar opinion</button>
+          <textarea v-model="newReview.comentario" placeholder="¿Qué te pareció el juego?"></textarea>
+          <button @click="enviarResena" class="btn-send">Publicar opinión</button>
         </div>
 
         <div class="reviews-list">
-          <div v-if="!game.Resenas?.length" class="no-reviews">Aun no hay opiniones para este juego.</div>
+          <div v-if="!game.Resenas?.length" class="no-reviews">Aún no hay opiniones para este juego.</div>
 
           <div v-for="res in game.Resenas" :key="res.id_resena" class="review-item">
             <div class="user-box">

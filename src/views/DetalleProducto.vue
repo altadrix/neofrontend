@@ -1,6 +1,6 @@
 <template>
   <div class="detail-page">
-    <div v-if="loading" class="status-card">Sincronizando detalles del juego...</div>
+    <div v-if="loading" class="status-card">Cargando detalles del producto...</div>
     <div v-else-if="error" class="status-card error">{{ error }}</div>
 
     <template v-else-if="game">
@@ -14,7 +14,7 @@
             <span class="eyebrow">Ficha de producto</span>
             <h1>{{ game.titulo }}</h1>
             <p class="description">
-              {{ game.descripcion || 'Sin descripcion registrada para este producto.' }}
+              {{ game.descripcion || 'Sin descripción registrada para este producto.' }}
             </p>
 
             <div class="meta-grid">
@@ -34,7 +34,7 @@
 
             <div class="purchase-card">
               <div>
-                <small>Precio final antes de checkout</small>
+                <small>Precio del producto</small>
                 <strong class="price">{{ formatCurrency(game.precio) }}</strong>
               </div>
 
@@ -55,10 +55,10 @@
         <div class="section-heading">
           <div>
             <span class="eyebrow">Comunidad</span>
-            <h2>Resenas aprobadas</h2>
+            <h2>Reseñas aprobadas</h2>
           </div>
           <button class="ghost-button" type="button" @click="showForm = !showForm">
-            {{ showForm ? 'Cerrar' : 'Escribir resena' }}
+            {{ showForm ? 'Cerrar' : 'Escribir reseña' }}
           </button>
         </div>
 
@@ -78,12 +78,12 @@
 
           <textarea v-model.trim="newReview.comentario" placeholder="Comparte tu experiencia con este juego."></textarea>
           <button class="primary-button" type="button" :disabled="postingReview" @click="postReview">
-            {{ postingReview ? 'Enviando...' : 'Enviar a moderacion' }}
+            {{ postingReview ? 'Enviando...' : 'Enviar a moderación' }}
           </button>
         </div>
 
         <div v-if="!game.Resenas?.length" class="empty-reviews">
-          Todavia no hay resenas aprobadas para este juego.
+          Todavía no hay reseñas aprobadas para este producto.
         </div>
 
         <div v-else class="reviews-list">
@@ -183,7 +183,7 @@ const addToCart = async () => {
     });
 
     setStoredCartCount(cart.cantidadItems);
-    feedback.value = 'Producto agregado. La burbuja del navbar ya fue actualizada.';
+    feedback.value = 'Producto agregado al carrito.';
   } catch (err) {
     feedback.value = err.message || 'No se pudo agregar al carrito.';
   } finally {
@@ -193,7 +193,7 @@ const addToCart = async () => {
 
 const postReview = async () => {
   if (!newReview.value.comentario) {
-    feedback.value = 'La resena necesita un comentario.';
+    feedback.value = 'La reseña necesita un comentario.';
     return;
   }
 
@@ -221,9 +221,9 @@ const postReview = async () => {
 
     newReview.value = { puntuacion: 5, comentario: '' };
     showForm.value = false;
-    feedback.value = 'Tu resena fue enviada y quedo pendiente de moderacion.';
+    feedback.value = 'Tu reseña fue enviada y quedó pendiente de moderación.';
   } catch (err) {
-    feedback.value = err.message || 'No se pudo publicar la resena.';
+    feedback.value = err.message || 'No se pudo publicar la reseña.';
   } finally {
     postingReview.value = false;
   }
@@ -250,6 +250,8 @@ onMounted(fetchProductData);
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
+  min-width: 0;
 }
 
 .status-card,
@@ -270,10 +272,17 @@ onMounted(fetchProductData);
   display: grid;
   grid-template-columns: minmax(280px, 380px) 1fr;
   gap: 28px;
+  align-items: start;
+}
+
+.image-shell,
+.info-shell {
+  min-width: 0;
 }
 
 .main-image {
   width: 100%;
+  aspect-ratio: 4 / 3;
   border-radius: 24px;
   object-fit: cover;
   box-shadow: 0 24px 40px rgba(15, 23, 42, 0.18);
@@ -363,6 +372,10 @@ onMounted(fetchProductData);
   gap: 0.8rem;
 }
 
+.action-row {
+  flex-wrap: wrap;
+}
+
 .ghost-button,
 .primary-button,
 .star-button {
@@ -376,6 +389,7 @@ onMounted(fetchProductData);
   border-radius: 16px;
   padding: 0 1rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .ghost-button {
@@ -491,13 +505,89 @@ textarea {
 }
 
 @media (max-width: 900px) {
-  .hero-grid,
-  .meta-grid,
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .meta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .purchase-card,
   .section-heading {
-    grid-template-columns: 1fr;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .action-row {
+    width: 100%;
+  }
+
+  .action-row .ghost-button,
+  .action-row .primary-button,
+  .section-heading .ghost-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .status-card,
+  .hero-card,
+  .reviews-card {
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .main-image {
+    border-radius: 18px;
+  }
+
+  .info-shell h1 {
+    font-size: 1.8rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .description,
+  .review-item p {
+    overflow-wrap: anywhere;
+  }
+
+  .meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-card {
+    padding: 1rem;
+  }
+
+  .price {
+    font-size: 1.65rem;
+  }
+
+  .review-form .primary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .status-card,
+  .hero-card,
+  .reviews-card {
+    padding: 14px;
+  }
+
+  .review-head {
+    align-items: flex-start;
+  }
+
+  .rating-input {
+    justify-content: space-between;
+  }
+
+  .star-button {
+    width: 40px;
+    min-height: 40px;
   }
 }
 </style>

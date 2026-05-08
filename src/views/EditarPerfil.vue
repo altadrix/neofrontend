@@ -118,7 +118,7 @@ const saveChanges = async () => {
     isError.value = true;
     feedback.value =
       error.status === 401
-        ? 'Tu sesion vencio. Inicia sesion de nuevo para actualizar tu perfil.'
+        ? 'Tu sesión venció. Inicia sesión de nuevo para actualizar tu perfil.'
         : error.message || 'No se pudo actualizar el perfil.';
   } finally {
     loading.value = false;

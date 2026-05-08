@@ -3,7 +3,7 @@
     <div class="reports-header">
       <div>
         <p class="eyebrow">Reportes</p>
-        <h2>Ventas NeoGaming</h2>
+        <h2>Ventas de la tienda</h2>
       </div>
       <div class="filters">
         <button
@@ -28,7 +28,7 @@
       </article>
 
       <article class="chart-panel">
-        <h3>Ventas por categoria</h3>
+        <h3>Ventas por categoría</h3>
         <Pie :data="pieChartData" :options="pieChartOptions" />
       </article>
     </div>
@@ -66,9 +66,9 @@ ChartJS.register(
 );
 
 const filterOptions = [
-  { value: '7d', label: 'Ultimos 7 dias' },
+  { value: '7d', label: 'Últimos 7 días' },
   { value: 'month', label: 'Mes actual' },
-  { value: 'year', label: 'Ano' },
+  { value: 'year', label: 'Año' },
 ];
 
 const selectedPeriod = ref('month');

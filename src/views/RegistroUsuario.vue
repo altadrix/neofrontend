@@ -71,7 +71,7 @@ const registrarUsuario = async () => {
       body: JSON.stringify(usuario.value),
     });
 
-    mensaje.value = 'Cuenta creada. Ahora puedes iniciar sesion.';
+    mensaje.value = 'Cuenta creada. Ahora puedes iniciar sesión.';
     router.push('/login');
   } catch (error) {
     esError.value = true;
@@ -174,11 +174,20 @@ const registrarUsuario = async () => {
   color: #be123c;
 }
 
-:global(.dark) .auth-card,
-:global(.dark) .auth-form input {
+:global(.dark) .auth-card {
   background: rgba(7, 14, 34, 0.78);
   border-color: rgba(148, 163, 184, 0.08);
   color: var(--text-light);
+}
+
+:global(.dark) .auth-form input {
+  background: rgba(248, 250, 252, 0.94);
+  border-color: rgba(148, 163, 184, 0.28);
+  color: var(--text-dark);
+}
+
+:global(.dark) .auth-form input::placeholder {
+  color: #64748b;
 }
 
 :global(.dark) .subtitle {

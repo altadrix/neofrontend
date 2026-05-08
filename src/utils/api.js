@@ -9,9 +9,11 @@ const configuredUrl = [
   ?.trim();
 
 const fallbackBaseUrl =
-  typeof window !== 'undefined'
-    ? window.location.origin
-    : '';
+  import.meta.env.DEV
+    ? 'http://localhost:3000'
+    : typeof window !== 'undefined'
+      ? window.location.origin
+      : '';
 
 const normalizedConfiguredUrl = (configuredUrl || '').replace(/\/+$/, '');
 
@@ -47,6 +49,7 @@ export const buildImageUrl = (relativePath, fallback = '') => {
 };
 
 export async function apiFetch(endpoint, options = {}) {
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const headers = new Headers(options.headers || {});
   const token = getToken();
 
@@ -66,7 +69,7 @@ export async function apiFetch(endpoint, options = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, requestOptions);
+  const response = await fetch(`${API_URL}${normalizedEndpoint}`, requestOptions);
   const contentType = response.headers.get('content-type') || '';
 
   let payload = null;
@@ -78,15 +81,21 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
+    const shouldClearSession =
+      options.clearSessionOnUnauthorized !== false &&
+      response.status === 401 &&
+      normalizedEndpoint !== '/login' &&
+      normalizedEndpoint !== '/usuarios';
+
+    if (shouldClearSession) {
       clearSession();
     }
 
     const fallbackMessage =
       response.status === 401
-        ? 'Tu sesion ha expirado. Inicia sesion de nuevo.'
+        ? 'Tu sesión ha expirado. Inicia sesión de nuevo.'
         : response.status === 403
-          ? 'No tienes permisos para realizar esta accion.'
+          ? 'No tienes permisos para realizar esta acción.'
           : 'No se pudo completar la solicitud.';
 
     const error = new Error(payload?.error || payload?.message || fallbackMessage);

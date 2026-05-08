@@ -3,21 +3,21 @@
     <section class="hero-panel">
       <div class="hero-copy">
         <p class="eyebrow">Bienvenido a</p>
-        <h1 class="hero-title">NeoGaming, tus mejores momentos de diversión</h1>
+        <h1 class="hero-title">NeoGaming, todo para jugar mejor</h1>
         <p class="hero-text">
-          ¡Descubre videojuegos, accesorios, periféricos y obtén los coleccionables más peculiares del mundo del gaming!
+          Videojuegos, accesorios, periféricos y coleccionables para armar tu setup y disfrutar cada partida.
         </p>
 
         <div class="hero-actions">
-          <button class="primary-action" type="button" @click="scrollToCatalogo">Explorar catalogo</button>
-          <RouterLink v-if="!usuario" to="/login" class="secondary-action">Iniciar sesion</RouterLink>
+          <button class="primary-action" type="button" @click="scrollToCatalogo">Ver catálogo</button>
+          <RouterLink v-if="!usuario" to="/login" class="secondary-action">Iniciar sesión</RouterLink>
           <RouterLink v-else to="/carrito" class="secondary-action">
             Continuar compra
           </RouterLink>
         </div>
 
         <div v-if="usuario" class="welcome-banner">
-          Sesion activa como {{ usuario.nombre }} {{ usuario.apellido }}.
+          Sesión activa como {{ usuario.nombre }} {{ usuario.apellido }}.
         </div>
       </div>
 
@@ -28,11 +28,11 @@
         </div>
         <div class="metric-card">
           <strong>18%</strong>
-          <span>ITBIS calculado automaticamente</span>
+          <span>ITBIS calculado automáticamente</span>
         </div>
         <div class="metric-card">
-          <strong>Realtime</strong>
-          <span>carrito sincronizado con navbar</span>
+          <strong>Al día</strong>
+          <span>carrito e inventario actualizados</span>
         </div>
       </div>
     </section>
@@ -44,7 +44,7 @@
       </div>
 
       <div class="filter-field">
-        <label>Genero</label>
+        <label>Género</label>
         <select v-model="selectedGenre">
           <option value="">Todos</option>
           <option v-for="genre in genreOptions" :key="genre" :value="genre">{{ genre }}</option>
@@ -62,7 +62,7 @@
       </div>
 
       <div class="filter-field price-field">
-        <label>Precio maximo: {{ formatCurrency(maxPrice) }}</label>
+        <label>Precio máximo: {{ formatCurrency(maxPrice) }}</label>
         <input v-model.number="maxPrice" type="range" min="0" max="5000" step="100" />
       </div>
 
@@ -72,13 +72,13 @@
     <section ref="catalogSection" class="catalog-panel">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Catalogo sincronizado</p>
-          <h2>Juegos destacados</h2>
+          <p class="eyebrow">Catálogo</p>
+          <h2>Productos destacados</h2>
         </div>
         <span>{{ filteredGames.length }} resultados</span>
       </div>
 
-      <div v-if="loading" class="status-box">Cargando catalogo desde NeoGaming...</div>
+      <div v-if="loading" class="status-box">Cargando catálogo...</div>
       <div v-else-if="error" class="status-box error-box">{{ error }}</div>
       <div v-else-if="filteredGames.length === 0" class="status-box">No encontramos juegos con esos filtros.</div>
 
@@ -118,7 +118,7 @@ const fetchProducts = async () => {
   try {
     games.value = await apiFetch('/productos');
   } catch (err) {
-    error.value = err.message || 'No se pudo cargar el catalogo.';
+    error.value = err.message || 'No se pudo cargar el catálogo.';
   } finally {
     loading.value = false;
   }

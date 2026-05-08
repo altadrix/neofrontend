@@ -199,7 +199,7 @@ const loadUsers = async () => {
     users.value = await apiFetch('/admin/usuarios', { headers: authHeaders() });
   } catch (err) {
     if (err.status === 401) {
-      error.value = 'Tu sesion vencio. Inicia sesion de nuevo para gestionar usuarios.';
+      error.value = 'Tu sesión venció. Inicia sesión de nuevo para gestionar usuarios.';
       return;
     }
 
@@ -281,7 +281,7 @@ const saveUser = async () => {
       err.status === 403
         ? 'Tu rol no puede aplicar ese cambio de usuario.'
         : err.status === 401
-          ? 'Tu sesion vencio. Inicia sesion de nuevo para actualizar usuarios.'
+          ? 'Tu sesión venció. Inicia sesión de nuevo para actualizar usuarios.'
           : err.message || 'No se pudo actualizar el usuario.';
   } finally {
     saving.value = false;
@@ -307,7 +307,7 @@ const removeUser = async (user) => {
       err.status === 403
         ? 'Tu rol no puede desactivar este usuario.'
         : err.status === 401
-          ? 'Tu sesion vencio. Inicia sesion de nuevo para gestionar usuarios.'
+          ? 'Tu sesión venció. Inicia sesión de nuevo para gestionar usuarios.'
           : err.message || 'No se pudo desactivar el usuario.';
   }
 };

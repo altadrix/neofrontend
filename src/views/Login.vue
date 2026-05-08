@@ -2,8 +2,8 @@
   <div class="auth-page">
     <div class="auth-card">
       <p class="eyebrow">Acceso</p>
-      <h1>Iniciar sesion en NeoGaming</h1>
-      <p class="subtitle">El navbar y las rutas protegidas se sincronizan en cuanto la sesion queda guardada.</p>
+      <h1>Iniciar sesión</h1>
+      <p class="subtitle">Accede a tu cuenta para comprar, revisar tu carrito o administrar la tienda.</p>
 
       <form class="auth-form" @submit.prevent="handleLogin">
         <label>
@@ -12,7 +12,7 @@
         </label>
 
         <label>
-          Contrasena
+          Contraseña
           <input v-model="credenciales.contrasena" type="password" placeholder="Tu clave" required />
         </label>
 
@@ -65,11 +65,11 @@ const handleLogin = async () => {
     saveSession(data);
     await syncCartCount();
 
-    mensaje.value = 'Sesion iniciada correctamente.';
+    mensaje.value = 'Sesión iniciada correctamente.';
     router.replace(String(route.query.redirect || '/'));
   } catch (error) {
     esError.value = true;
-    mensaje.value = error.message || 'No se pudo iniciar sesion.';
+    mensaje.value = error.message || 'No se pudo iniciar sesión.';
   } finally {
     loading.value = false;
   }
@@ -168,11 +168,20 @@ const handleLogin = async () => {
   color: #be123c;
 }
 
-:global(.dark) .auth-card,
-:global(.dark) .auth-form input {
+:global(.dark) .auth-card {
   background: rgba(7, 14, 34, 0.78);
   border-color: rgba(148, 163, 184, 0.08);
   color: var(--text-light);
+}
+
+:global(.dark) .auth-form input {
+  background: rgba(248, 250, 252, 0.94);
+  border-color: rgba(148, 163, 184, 0.28);
+  color: var(--text-dark);
+}
+
+:global(.dark) .auth-form input::placeholder {
+  color: #64748b;
 }
 
 :global(.dark) .subtitle {

@@ -8,12 +8,11 @@
         <div class="nav-content">
           <div class="nav-left">
             <RouterLink to="/" class="brand">
-              <span class="brand-ring"></span>
               <span class="brand-text">NeoGaming</span>
             </RouterLink>
 
             <div class="nav-links">
-              <RouterLink to="/" class="nav-link">Store</RouterLink>
+              <RouterLink to="/" class="nav-link">Tienda</RouterLink>
               <RouterLink v-if="usuario" to="/carrito" class="nav-link nav-link-cart">
                 Carrito
                 <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
@@ -36,7 +35,7 @@
                 <span class="cart-count">{{ cartCount }}</span>
               </button>
 
-              <button @click="cerrarSesion" class="icon-button logout-button" type="button" title="Cerrar sesion">
+              <button @click="cerrarSesion" class="icon-button logout-button" type="button" title="Cerrar sesión">
                 <LogOut :size="18" />
               </button>
 
@@ -68,7 +67,7 @@
 
     <footer class="main-footer">
       <div class="nav-container footer-content">
-        <p>NeoGaming 2026. Checkout con ITBIS automatico y panel operativo listo para venta.</p>
+        <p>NeoGaming 2026. Tienda gamer con carrito, pagos e inventario al día.</p>
       </div>
     </footer>
   </div>
@@ -298,14 +297,6 @@ body {
   gap: 0.75rem;
   text-decoration: none;
   color: inherit;
-}
-
-.brand-ring {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: 2px solid rgba(49, 198, 255, 0.85);
-  box-shadow: 0 0 0 5px rgba(49, 198, 255, 0.14);
 }
 
 .brand-text {

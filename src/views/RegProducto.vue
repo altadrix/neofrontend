@@ -1,7 +1,7 @@
 <template>
   <div class="product-admin-page">
     <section class="panel-card form-card">
-      <p class="eyebrow">Catalogo</p>
+      <p class="eyebrow">Catálogo</p>
       <h1>{{ editMode ? 'Editar producto' : 'Registrar producto' }}</h1>
 
       <div v-if="imagePreview" class="preview-shell">
@@ -10,7 +10,7 @@
 
       <form class="product-form" @submit.prevent="handleSubmit">
         <label>
-          Titulo
+          Título
           <input v-model.trim="producto.titulo" type="text" required />
         </label>
 
@@ -42,6 +42,21 @@
           </select>
         </label>
 
+        <div v-if="canCreateManufacturer" class="manufacturer-quick-add full-width">
+          <label>
+            Nuevo fabricante
+            <input v-model.trim="newManufacturerName" type="text" placeholder="Ej. Logitech, Nintendo, Sony" />
+          </label>
+          <button
+            class="ghost-button"
+            type="button"
+            :disabled="savingManufacturer || !newManufacturerName"
+            @click="createManufacturer"
+          >
+            {{ savingManufacturer ? 'Guardando...' : 'Añadir fabricante' }}
+          </button>
+        </div>
+
         <label>
           Precio base
           <input v-model.number="producto.precio" min="0" step="0.01" type="number" required />
@@ -53,15 +68,15 @@
         </label>
 
         <label class="full-width">
-          Descripcion
+          Descripción
           <textarea v-model.trim="producto.descripcion"></textarea>
         </label>
 
         <template v-if="selectedTypeSlug === 'videojuego'">
           <label>
-            Genero
+            Género
             <select v-model.number="producto.id_genero" required>
-              <option value="" disabled>Selecciona un genero</option>
+              <option value="" disabled>Selecciona un género</option>
               <option v-for="genero in catalogs.generos" :key="genero.id_genero" :value="genero.id_genero">
                 {{ genero.nombre }}
               </option>
@@ -158,7 +173,7 @@
     <section class="panel-card table-card">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Gestion</p>
+          <p class="eyebrow">Gestión</p>
           <h2>Productos registrados</h2>
         </div>
         <button class="ghost-button" type="button" @click="loadAdminData">Recargar</button>
@@ -169,7 +184,7 @@
           <thead>
             <tr>
               <th>Imagen</th>
-              <th>Titulo</th>
+              <th>Título</th>
               <th>Tipo</th>
               <th>Precio</th>
               <th>Stock</th>
@@ -199,85 +214,13 @@
       </div>
     </section>
 
-    <section class="panel-card catalog-card">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Catalogos</p>
-          <h2>Datos base editables</h2>
-        </div>
-      </div>
-
-      <div class="catalog-toolbar">
-        <label>
-          Catalogo
-          <select v-model="selectedCatalogKey">
-            <option v-for="catalog in catalogOptions" :key="catalog.key" :value="catalog.key">
-              {{ catalog.label }}
-            </option>
-          </select>
-        </label>
-      </div>
-
-      <form class="catalog-form" @submit.prevent="saveCatalogItem">
-        <label>
-          Nombre
-          <input v-model.trim="catalogForm.nombre" type="text" required />
-        </label>
-
-        <label v-if="selectedCatalogKey === 'municipios'">
-          Provincia
-          <select v-model.number="catalogForm.id_provincia" required>
-            <option value="" disabled>Selecciona una provincia</option>
-            <option
-              v-for="provincia in catalogs.provincias"
-              :key="provincia.id_provincia"
-              :value="provincia.id_provincia"
-            >
-              {{ provincia.nombre }}
-            </option>
-          </select>
-        </label>
-
-        <div class="actions">
-          <button class="primary-button" type="submit">
-            {{ editingCatalogItem ? 'Guardar catalogo' : 'Crear registro' }}
-          </button>
-          <button v-if="editingCatalogItem" class="ghost-button" type="button" @click="resetCatalogForm">
-            Cancelar
-          </button>
-        </div>
-      </form>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th v-if="selectedCatalogKey === 'municipios'">Provincia</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in selectedCatalogItems" :key="catalogItemKey(item)">
-              <td>{{ item.nombre }}</td>
-              <td v-if="selectedCatalogKey === 'municipios'">
-                {{ provinciaNombre(item.id_provincia) }}
-              </td>
-              <td>
-                <button class="table-button" type="button" @click="editCatalogItem(item)">Editar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { apiFetch, buildImageUrl, formatCurrency } from '../utils/api';
-import { authHeaders } from '../utils/session';
+import { authHeaders, getStoredUser, getUserHierarchyLevel } from '../utils/session';
 
 const listaProductos = ref([]);
 const catalogs = ref({
@@ -297,24 +240,9 @@ const editMode = ref(false);
 const productoActualId = ref(null);
 const selectedFile = ref(null);
 const imagePreview = ref('');
-const selectedCatalogKey = ref('fabricantes');
-const editingCatalogItem = ref(null);
-const catalogForm = ref({
-  nombre: '',
-  id_provincia: '',
-});
-
-const catalogOptions = [
-  { key: 'fabricantes', label: 'Fabricantes' },
-  { key: 'generos', label: 'Generos' },
-  { key: 'plataformas', label: 'Plataformas' },
-  { key: 'formatos', label: 'Formatos' },
-  { key: 'tiposAccesorio', label: 'Tipos de accesorio' },
-  { key: 'tiposColeccionable', label: 'Tipos de coleccionable' },
-  { key: 'provincias', label: 'Provincias' },
-  { key: 'municipios', label: 'Municipios' },
-  { key: 'metodosPago', label: 'Metodos de pago' },
-];
+const currentUser = ref(getStoredUser());
+const newManufacturerName = ref('');
+const savingManufacturer = ref(false);
 
 const emptyProduct = () => ({
   id_tipo_producto: '',
@@ -345,32 +273,12 @@ const selectedTypeSlug = computed(() =>
   selectedType.value?.nombre?.toLowerCase().replace(/\s+/g, '') || '',
 );
 
-const selectedCatalogItems = computed(() => catalogs.value[selectedCatalogKey.value] || []);
+const canCreateManufacturer = computed(() => getUserHierarchyLevel(currentUser.value) >= 2);
 
 const mostrarMensaje = (texto, error = false) => {
   mensaje.value = texto;
   esError.value = error;
 };
-
-const provinciaNombre = (idProvincia) =>
-  catalogs.value.provincias.find((provincia) => Number(provincia.id_provincia) === Number(idProvincia))?.nombre ||
-  'Sin provincia';
-
-const catalogItemKey = (item) =>
-  Object.values(item).find((value) => typeof value === 'number') || JSON.stringify(item);
-
-const catalogMeta = () =>
-  ({
-    fabricantes: { idField: 'id_fabricante' },
-    generos: { idField: 'id_genero' },
-    plataformas: { idField: 'id_plataforma' },
-    formatos: { idField: 'id_formato' },
-    provincias: { idField: 'id_provincia' },
-    municipios: { idField: 'id_municipio' },
-    tiposAccesorio: { idField: 'id_tipo_accesorio' },
-    tiposColeccionable: { idField: 'id_tipo_coleccionable' },
-    metodosPago: { idField: 'id_metodo_pago' },
-  })[selectedCatalogKey.value];
 
 const handleFileUpload = (event) => {
   const file = event.target.files?.[0];
@@ -411,14 +319,15 @@ const loadAdminData = async () => {
       tiposColeccionable: catalogPayload.tiposColeccionable || [],
       metodosPago: catalogPayload.metodosPago || [],
     };
+    currentUser.value = getStoredUser();
   } catch (error) {
     if (error.status === 401) {
-      mostrarMensaje('Tu sesion vencio. Inicia sesion de nuevo para seguir administrando productos.', true);
+      mostrarMensaje('Tu sesión venció. Inicia sesión de nuevo para seguir administrando productos.', true);
       return;
     }
 
     if (error.status === 403) {
-      mostrarMensaje('Tu rol no tiene permiso para acceder a la administracion de productos.', true);
+      mostrarMensaje('Tu rol no tiene permiso para acceder a la administración de productos.', true);
       return;
     }
 
@@ -471,7 +380,7 @@ const handleSubmit = async () => {
     await loadAdminData();
   } catch (error) {
     if (error.status === 401) {
-      mostrarMensaje('Tu sesion vencio. Inicia sesion de nuevo para guardar cambios.', true);
+      mostrarMensaje('Tu sesión venció. Inicia sesión de nuevo para guardar cambios.', true);
       return;
     }
 
@@ -516,7 +425,7 @@ const eliminarProducto = async (idProducto) => {
     await loadAdminData();
   } catch (error) {
     if (error.status === 401) {
-      mostrarMensaje('Tu sesion vencio. Inicia sesion de nuevo para desactivar productos.', true);
+      mostrarMensaje('Tu sesión venció. Inicia sesión de nuevo para desactivar productos.', true);
       return;
     }
 
@@ -537,67 +446,36 @@ const resetForm = () => {
   imagePreview.value = '';
 };
 
-const resetCatalogForm = () => {
-  editingCatalogItem.value = null;
-  catalogForm.value = {
-    nombre: '',
-    id_provincia: '',
-  };
-};
+const createManufacturer = async () => {
+  if (!newManufacturerName.value) return;
 
-const editCatalogItem = (item) => {
-  editingCatalogItem.value = item;
-  catalogForm.value = {
-    nombre: item.nombre || '',
-    id_provincia: item.id_provincia || '',
-  };
-};
+  savingManufacturer.value = true;
 
-const saveCatalogItem = async () => {
   try {
-    const headers = authHeaders();
-    const meta = catalogMeta();
-    const payload = {
-      nombre: catalogForm.value.nombre,
-    };
+    const created = await apiFetch('/admin/catalogos/fabricantes', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ nombre: newManufacturerName.value }),
+    });
 
-    if (selectedCatalogKey.value === 'municipios') {
-      payload.id_provincia = catalogForm.value.id_provincia;
-    }
-
-    if (editingCatalogItem.value) {
-      await apiFetch(
-        `/admin/catalogos/${selectedCatalogKey.value}/${editingCatalogItem.value[meta.idField]}`,
-        {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(payload),
-        },
-      );
-      mostrarMensaje('Catalogo actualizado.');
-    } else {
-      await apiFetch(`/admin/catalogos/${selectedCatalogKey.value}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
-      mostrarMensaje('Registro creado.');
-    }
-
-    resetCatalogForm();
+    newManufacturerName.value = '';
     await loadAdminData();
+    producto.value.id_fabricante = created?.id_fabricante || null;
+    mostrarMensaje('Fabricante añadido. Ya puedes usarlo en este producto.');
   } catch (error) {
     if (error.status === 401) {
-      mostrarMensaje('Tu sesion vencio. Inicia sesion de nuevo para actualizar catalogos.', true);
+      mostrarMensaje('Tu sesión venció. Inicia sesión de nuevo para añadir fabricantes.', true);
       return;
     }
 
     if (error.status === 403) {
-      mostrarMensaje('Tu rol no tiene permiso para actualizar catalogos administrativos.', true);
+      mostrarMensaje('Tu rol no tiene permiso para añadir fabricantes.', true);
       return;
     }
 
-    mostrarMensaje(error.message || 'No se pudo guardar el catalogo.', true);
+    mostrarMensaje(error.message || 'No se pudo añadir el fabricante.', true);
+  } finally {
+    savingManufacturer.value = false;
   }
 };
 
@@ -619,10 +497,6 @@ onMounted(loadAdminData);
   padding: 22px;
 }
 
-.catalog-card {
-  grid-column: 1 / -1;
-}
-
 .eyebrow {
   margin: 0 0 0.5rem;
   color: #0284c7;
@@ -633,8 +507,7 @@ onMounted(loadAdminData);
 }
 
 .form-card h1,
-.table-card h2,
-.catalog-card h2 {
+.table-card h2 {
   margin-top: 0;
 }
 
@@ -650,8 +523,7 @@ onMounted(loadAdminData);
   object-fit: cover;
 }
 
-.product-form,
-.catalog-form {
+.product-form {
   display: grid;
   gap: 14px;
 }
@@ -660,8 +532,7 @@ onMounted(loadAdminData);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.product-form label,
-.catalog-form label {
+.product-form label {
   display: grid;
   gap: 0.45rem;
   font-weight: 600;
@@ -669,9 +540,7 @@ onMounted(loadAdminData);
 
 .product-form input,
 .product-form textarea,
-.product-form select,
-.catalog-form input,
-.catalog-form select {
+.product-form select {
   min-height: 48px;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.18);
@@ -701,6 +570,16 @@ onMounted(loadAdminData);
   width: auto;
 }
 
+.manufacturer-quick-add {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.05);
+}
+
 .checkbox-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -724,8 +603,7 @@ onMounted(loadAdminData);
 
 .actions,
 .section-heading,
-.action-row,
-.catalog-toolbar {
+.action-row {
   display: flex;
   gap: 12px;
 }
@@ -733,10 +611,6 @@ onMounted(loadAdminData);
 .section-heading {
   justify-content: space-between;
   align-items: center;
-}
-
-.catalog-toolbar {
-  margin-bottom: 1rem;
 }
 
 .primary-button,
@@ -815,8 +689,7 @@ th {
 :global(.dark) .product-form input,
 :global(.dark) .product-form textarea,
 :global(.dark) .product-form select,
-:global(.dark) .catalog-form input,
-:global(.dark) .catalog-form select,
+:global(.dark) .manufacturer-quick-add,
 :global(.dark) .checkbox-pill {
   background: rgba(7, 14, 34, 0.78);
   border-color: rgba(148, 163, 184, 0.08);
@@ -834,7 +707,8 @@ th {
 
 @media (max-width: 1100px) {
   .product-admin-page,
-  .product-form {
+  .product-form,
+  .manufacturer-quick-add {
     grid-template-columns: 1fr;
   }
 }

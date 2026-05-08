@@ -3,7 +3,7 @@
     <header class="page-header">
       <div>
         <p class="eyebrow">Panel administrativo</p>
-        <h1>Control operativo NeoGaming</h1>
+        <h1>Panel de la tienda</h1>
       </div>
       <button class="ghost-button" type="button" @click="loadAdminData">Recargar</button>
     </header>
@@ -54,7 +54,7 @@
                 <th>Tipo</th>
                 <th>Precio</th>
                 <th>Stock</th>
-                <th>Accion</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -95,7 +95,7 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">Pedidos</p>
-            <h2>Estados de envio y entrega</h2>
+            <h2>Estados de envío y entrega</h2>
           </div>
         </div>
 
@@ -105,7 +105,7 @@
               <tr>
                 <th>ID</th>
                 <th>Cliente</th>
-                <th>Ubicacion</th>
+                <th>Ubicación</th>
                 <th>Total</th>
                 <th>Estado</th>
                 <th>Actualizar</th>
@@ -150,7 +150,7 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">Municipios pendientes</p>
-            <h2>Validacion administrativa</h2>
+            <h2>Validación administrativa</h2>
           </div>
           <span>{{ pendingMunicipios.length }} pendientes</span>
         </div>
@@ -193,8 +193,8 @@
       <section class="panel-card">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Moderacion</p>
-            <h2>Resenas pendientes</h2>
+            <p class="eyebrow">Moderación</p>
+            <h2>Reseñas pendientes</h2>
           </div>
         </div>
 
@@ -339,7 +339,7 @@ const locationTooltip = (pedido) => {
   const ubicacion = pedido.ubicacion || {};
   return [
     `Calle: ${ubicacion.calle || 'N/D'}`,
-    `Numero: ${ubicacion.numero_casa || 'N/D'}`,
+    `Número: ${ubicacion.numero_casa || 'N/D'}`,
     `Provincia: ${ubicacion.provincia_nombre || 'N/D'}`,
     `Municipio: ${ubicacion.municipio_nombre || 'N/D'}`,
     `Sector: ${ubicacion.sector || 'N/D'}`,
@@ -404,9 +404,9 @@ const moderateReview = async (resena, estado) => {
     });
 
     await loadAdminData();
-    feedback.value = `Resena marcada como ${estado.toLowerCase()}.`;
+    feedback.value = `Reseña marcada como ${estado.toLowerCase()}.`;
   } catch (err) {
-    feedback.value = err.message || 'No se pudo moderar la resena.';
+    feedback.value = err.message || 'No se pudo moderar la reseña.';
   }
 };
 
