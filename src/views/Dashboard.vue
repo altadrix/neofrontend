@@ -274,7 +274,7 @@ const loadAdminData = async () => {
         apiFetch('/admin/dashboard', { headers }),
         apiFetch('/admin/inventario', { headers }),
         apiFetch('/pedidos', { headers }),
-        apiFetch('/admin/resenas', { headers }),
+        apiFetch('/admin/resenas?estado=Pendiente', { headers }),
         apiFetch('/admin/municipios-pendientes', { headers }),
         apiFetch('/admin/catalogos', { headers }),
       ]);
@@ -403,6 +403,7 @@ const moderateReview = async (resena, estado) => {
       body: JSON.stringify({ estado }),
     });
 
+    reviews.value = reviews.value.filter((item) => item.id_resena !== resena.id_resena);
     await loadAdminData();
     feedback.value = `Reseña marcada como ${estado.toLowerCase()}.`;
   } catch (err) {

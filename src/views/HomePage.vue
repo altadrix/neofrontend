@@ -24,15 +24,15 @@
       <div class="hero-metrics">
         <div class="metric-card">
           <strong>{{ games.length }}</strong>
-          <span>productos activos</span>
+          <span>Productos activos</span>
         </div>
         <div class="metric-card">
-          <strong>18%</strong>
-          <span>ITBIS calculado automáticamente</span>
+          <strong>Un universo</strong>
+          <span>de productos para ti</span>
         </div>
         <div class="metric-card">
-          <strong>Al día</strong>
-          <span>carrito e inventario actualizados</span>
+          <strong>Precios competitivos</strong>
+          <span>Pensando en tu bolsillo</span>
         </div>
       </div>
     </section>

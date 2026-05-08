@@ -201,6 +201,54 @@ body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+.app-shell :where(
+  .auth-card,
+  .catalog-panel,
+  .checkout-form textarea,
+  .editor-card,
+  .editor-grid select,
+  .empty-card,
+  .filter-field select,
+  .filters-panel,
+  .game-card,
+  .item-card,
+  .metric-card,
+  .panel-card,
+  .product-form select,
+  .profile-card,
+  .profile-form input,
+  .review-card,
+  .review-item,
+  .reviews-card,
+  .secondary-action,
+  .smart-address__grid textarea,
+  .status-box,
+  .status-select,
+  .success-card
+) {
+  color: #000 !important;
+}
+
+.app-shell :where(
+  .auth-card,
+  .catalog-panel,
+  .editor-card,
+  .empty-card,
+  .filters-panel,
+  .game-card,
+  .item-card,
+  .metric-card,
+  .panel-card,
+  .profile-card,
+  .review-card,
+  .review-item,
+  .reviews-card,
+  .status-box,
+  .success-card
+) :where(h1, h2, h3, h4, p, span, small, strong, label, li, td, th) {
+  color: inherit !important;
+}
 </style>
 
 <style scoped>

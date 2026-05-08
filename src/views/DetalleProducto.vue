@@ -252,6 +252,7 @@ onMounted(fetchProductData);
   gap: 24px;
   width: 100%;
   min-width: 0;
+  overflow-x: clip;
 }
 
 .status-card,
@@ -344,6 +345,7 @@ onMounted(fetchProductData);
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.1rem;
+  min-width: 0;
 }
 
 .purchase-card small {
@@ -370,6 +372,7 @@ onMounted(fetchProductData);
 .section-heading {
   justify-content: space-between;
   gap: 0.8rem;
+  min-width: 0;
 }
 
 .action-row {
@@ -428,6 +431,7 @@ onMounted(fetchProductData);
 
 textarea {
   width: 100%;
+  max-width: 100%;
   min-height: 130px;
   margin: 0.9rem 0;
   border-radius: 18px;
@@ -565,6 +569,32 @@ textarea {
     font-size: 1.65rem;
   }
 
+  .action-row,
+  .rating-input {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .ghost-button,
+  .primary-button {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .review-head {
+    align-items: flex-start;
+  }
+
+  .review-head > div {
+    min-width: 0;
+  }
+
+  .review-avatar {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+  }
+
   .review-form .primary-button {
     width: 100%;
   }
@@ -582,11 +612,12 @@ textarea {
   }
 
   .rating-input {
-    justify-content: space-between;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    justify-content: stretch;
   }
 
   .star-button {
-    width: 40px;
+    width: 100%;
     min-height: 40px;
   }
 }

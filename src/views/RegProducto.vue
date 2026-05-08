@@ -487,6 +487,7 @@ onMounted(loadAdminData);
   display: grid;
   grid-template-columns: minmax(320px, 420px) 1fr;
   gap: 24px;
+  min-width: 0;
 }
 
 .panel-card {
@@ -495,6 +496,7 @@ onMounted(loadAdminData);
   background: rgba(255, 255, 255, 0.56);
   backdrop-filter: blur(22px);
   padding: 22px;
+  min-width: 0;
 }
 
 .eyebrow {
@@ -526,6 +528,7 @@ onMounted(loadAdminData);
 .product-form {
   display: grid;
   gap: 14px;
+  min-width: 0;
 }
 
 .product-form {
@@ -536,11 +539,14 @@ onMounted(loadAdminData);
   display: grid;
   gap: 0.45rem;
   font-weight: 600;
+  min-width: 0;
 }
 
 .product-form input,
 .product-form textarea,
 .product-form select {
+  width: 100%;
+  min-width: 0;
   min-height: 48px;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.18);
@@ -606,6 +612,7 @@ onMounted(loadAdminData);
 .action-row {
   display: flex;
   gap: 12px;
+  min-width: 0;
 }
 
 .section-heading {
@@ -657,6 +664,7 @@ onMounted(loadAdminData);
 
 .table-wrapper {
   overflow-x: auto;
+  max-width: 100%;
 }
 
 table {
@@ -710,6 +718,39 @@ th {
   .product-form,
   .manufacturer-quick-add {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .panel-card {
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .section-heading,
+  .actions,
+  .action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primary-button,
+  .ghost-button,
+  .table-button,
+  .delete-button {
+    width: 100%;
+    white-space: normal;
+  }
+
+  th,
+  td {
+    padding: 0.8rem 0.65rem;
+  }
+
+  .thumb {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
   }
 }
 </style>
